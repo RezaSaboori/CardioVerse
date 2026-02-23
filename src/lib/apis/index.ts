@@ -2,9 +2,32 @@ import { WEBUI_BASE_URL } from '$lib/constants';
 import { convertOpenApiToToolPayload } from '$lib/utils';
 import { getOpenAIModelsDirect } from './openai';
 
+type OpenAIApiConfigItem = {
+	enable?: boolean;
+	model_ids?: string[];
+	prefix_id?: string;
+	tags?: string[];
+};
+
+type DirectConnections = {
+	OPENAI_API_BASE_URLS: string[];
+	OPENAI_API_KEYS: string[];
+	OPENAI_API_CONFIGS: Record<string, OpenAIApiConfigItem>;
+};
+
+type ModelItem = {
+	id: string;
+	name?: string;
+	owned_by?: string;
+	openai?: { id: string };
+	urlIdx?: string;
+	tags?: string[];
+	[key: string]: unknown;
+};
+
 export const getModels = async (
 	token: string = '',
-	connections: object | null = null,
+	connections: DirectConnections | null = null,
 	base: boolean = false,
 	refresh: boolean = false
 ) => {
@@ -42,7 +65,7 @@ export const getModels = async (
 	let models = res?.data ?? [];
 
 	if (connections && !base) {
-		let localModels = [];
+		let localModels: ModelItem[] = [];
 
 		if (connections) {
 			const OPENAI_API_BASE_URLS = connections.OPENAI_API_BASE_URLS;
@@ -63,7 +86,7 @@ export const getModels = async (
 						if (modelIds.length > 0) {
 							const modelList = {
 								object: 'list',
-								data: modelIds.map((modelId) => ({
+								data: modelIds.map((modelId: string) => ({
 									id: modelId,
 									name: modelId,
 									owned_by: 'openai',
@@ -81,10 +104,10 @@ export const getModels = async (
 							requests.push(
 								(async () => {
 									return await getOpenAIModelsDirect(url, OPENAI_API_KEYS[idx])
-										.then((res) => {
+										.then((res: { data?: ModelItem[] }) => {
 											return res;
 										})
-										.catch((err) => {
+										.catch(() => {
 											return {
 												object: 'list',
 												data: [],
@@ -114,8 +137,8 @@ export const getModels = async (
 				const response = responses[idx];
 				const apiConfig = OPENAI_API_CONFIGS[idx.toString()] ?? {};
 
-				let models = Array.isArray(response) ? response : (response?.data ?? []);
-				models = models.map((model) => ({ ...model, openai: { id: model.id }, urlIdx: idx }));
+				let models: ModelItem[] = Array.isArray(response) ? response : (response?.data ?? []);
+				models = models.map((model: ModelItem) => ({ ...model, openai: { id: model.id }, urlIdx: idx }));
 
 				const prefixId = apiConfig.prefix_id;
 				if (prefixId) {
@@ -136,7 +159,7 @@ export const getModels = async (
 		}
 
 		models = models.concat(
-			localModels.map((model) => ({
+			localModels.map((model: ModelItem) => ({
 				...model,
 				name: model?.name ?? model?.id,
 				direct: true
@@ -144,7 +167,7 @@ export const getModels = async (
 		);
 
 		// Remove duplicates
-		const modelsMap = {};
+		const modelsMap: Record<string, ModelItem> = {};
 		for (const model of models) {
 			modelsMap[model.id] = model;
 		}
@@ -338,41 +361,51 @@ export const getToolServerData = async (token: string, url: string) => {
 	return res;
 };
 
-export const getToolServersData = async (servers: object[]) => {
+type ToolServerInput = {
+	config?: { enable?: boolean };
+	auth_type?: string;
+	key?: string;
+	spec_type?: string;
+	path?: string;
+	url?: string;
+	spec?: string;
+};
+
+export const getToolServersData = async (servers: ToolServerInput[]) => {
 	return (
 		await Promise.all(
 			servers
 				.filter((server) => server?.config?.enable)
 				.map(async (server) => {
-					let error = null;
+					let error: unknown = null;
 
-					let toolServerToken = null;
+					let toolServerToken: string | null = null;
 
 					const auth_type = server?.auth_type ?? 'bearer';
 					if (auth_type === 'bearer') {
-						toolServerToken = server?.key;
+						toolServerToken = server?.key ?? null;
 					} else if (auth_type === 'none') {
 						// No authentication
 					} else if (auth_type === 'session') {
 						toolServerToken = localStorage.token;
 					}
 
-					let res = null;
+					let res: { paths?: unknown; info?: unknown } | null = null;
 					const specType = server?.spec_type ?? 'url';
 
 					if (specType === 'url') {
 						res = await getToolServerData(
-							toolServerToken,
+							toolServerToken ?? '',
 							(server?.path ?? '').includes('://')
-								? server?.path
-								: `${server?.url}${(server?.path ?? '').startsWith('/') ? '' : '/'}${server?.path}`
-						).catch((err) => {
+								? (server?.path ?? '')
+								: `${server?.url ?? ''}${(server?.path ?? '').startsWith('/') ? '' : '/'}${server?.path ?? ''}`
+						).catch((err: unknown) => {
 							error = err;
 							return null;
 						});
 					} else if ((specType === 'json' && server?.spec) ?? null) {
 						try {
-							res = JSON.parse(server?.spec);
+							res = JSON.parse(server?.spec ?? '{}');
 						} catch (e) {
 							error = 'Failed to parse JSON spec';
 						}
@@ -408,7 +441,7 @@ export const getToolServersData = async (servers: object[]) => {
 					}
 				})
 		)
-	).filter((server) => server);
+	).filter((server): server is NonNullable<typeof server> => server != null);
 };
 
 export const executeToolServer = async (
@@ -513,7 +546,7 @@ export const executeToolServer = async (
 		}
 
 		// make a clone of res and extract headers
-		const responseHeaders = {};
+		const responseHeaders: Record<string, string> = {};
 		res.headers.forEach((value, key) => {
 			responseHeaders[key] = value;
 		});
@@ -1365,7 +1398,8 @@ export const getBackendConfig = async () => {
 		credentials: 'include',
 		headers: {
 			'Content-Type': 'application/json'
-		}
+		},
+		cache: 'no-store'
 	})
 		.then(async (res) => {
 			if (!res.ok) throw await res.json();

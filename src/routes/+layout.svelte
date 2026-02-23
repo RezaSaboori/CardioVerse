@@ -369,7 +369,7 @@
 
 					if ($isLastActiveTab) {
 						if ($settings?.notificationEnabled ?? false) {
-							new Notification(`${displayTitle} • Open WebUI`, {
+							new Notification(`${displayTitle} • NCIBB ChatHub`, {
 								body: content,
 								icon: `${WEBUI_BASE_URL}/static/favicon.png`
 							});
@@ -572,7 +572,7 @@
 
 				if ($isLastActiveTab) {
 					if ($settings?.notificationEnabled ?? false) {
-						new Notification(`${title} • Open WebUI`, {
+						new Notification(`${title} • NCIBB ChatHub`, {
 							body: data?.content,
 							icon: `${WEBUI_API_BASE_URL}/users/${data?.user?.id}/profile/image`
 						});
@@ -755,11 +755,18 @@
 		});
 
 		let backendConfig = null;
-		try {
-			backendConfig = await getBackendConfig();
-			console.log('Backend config:', backendConfig);
-		} catch (error) {
-			console.error('Error loading backend config:', error);
+		const maxAttempts = 3;
+		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				backendConfig = await getBackendConfig();
+				console.log('Backend config:', backendConfig);
+				break;
+			} catch (error) {
+				console.error(`Error loading backend config (attempt ${attempt}/${maxAttempts}):`, error);
+				if (attempt < maxAttempts) {
+					await new Promise((r) => setTimeout(r, 1500));
+				}
+			}
 		}
 		// Initialize i18n even if we didn't get a backend config,
 		// so `/error` can show something that's not `undefined`.
