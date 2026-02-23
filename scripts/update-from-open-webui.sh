@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Update CardioVerse from open-webui/open-webui upstream.
+# Update CardioVerse from your open-webui fork (origin = RezaSaboori/open-webui).
+# Sync your fork with open-webui/open-webui first (GitHub "Sync fork" or upstream merge).
 # Keeps your customizations; merge conflicts may need manual resolution.
 # See docs/CARDIOVERSE_UPDATING.md for details.
 
 set -e
 cd "$(dirname "$0")/.."
 
-echo "Fetching latest from Open WebUI (origin)..."
+echo "Fetching latest from your fork (origin)..."
 git fetch origin
 
 echo "Merging origin/main into current branch..."

@@ -1,23 +1,36 @@
 # Updating CardioVerse from Open WebUI upstream
 
-CardioVerse is a customized branch of [open-webui/open-webui](https://github.com/open-webui/open-webui). This guide explains how to pull the latest Open WebUI changes while keeping CardioVerse customizations.
+CardioVerse is a customized branch of [open-webui/open-webui](https://github.com/open-webui/open-webui). Since you use your **fork** [RezaSaboori/open-webui](https://github.com/RezaSaboori/open-webui) as the source (no direct access to the original repo), you sync the fork first, then pull into CardioVerse.
 
 ## Remotes
 
-| Remote   | URL                                      | Use |
-|----------|------------------------------------------|-----|
-| `origin` | `git@github.com:open-webui/open-webui.git` | Upstream Open WebUI (pull updates) |
-| `cardio` | `https://github.com/RezaSaboori/CardioVerse.git` | Your CardioVerse repo (push/pull your branch) |
+| Remote     | URL                                               | Use |
+|------------|---------------------------------------------------|-----|
+| `origin`   | `https://github.com/RezaSaboori/open-webui.git`   | Your fork — **pull updates into CardioVerse from here** |
+| `upstream` | `git@github.com:open-webui/open-webui.git`        | Original Open WebUI — **sync your fork from this** (on GitHub or via git) |
+| `cardio`   | `https://github.com/RezaSaboori/CardioVerse.git`  | CardioVerse repo — push/pull your customized branch |
 
-## Quick update (merge upstream into CardioVerse)
+## Two-step update
 
-From the repo root:
+### Step 1: Sync your fork with Open WebUI
+
+Get the latest from the original repo into [RezaSaboori/open-webui](https://github.com/RezaSaboori/open-webui):
+
+- **On GitHub:** Open your fork → click **“Sync fork”** → **“Update branch”** (if the button is there).
+- **Or in a clone of your fork:**  
+  `git fetch upstream && git checkout main && git merge upstream/main && git push origin main`
+
+You only need to do this when you want to pull new Open WebUI changes into CardioVerse.
+
+### Step 2: Pull updates into CardioVerse (this repo)
+
+From the **CardioVerse** repo root:
 
 ```bash
-# 1. Fetch latest from Open WebUI
+# 1. Fetch latest from your fork
 git fetch origin
 
-# 2. Merge upstream main into your current branch (keeps your commits on top)
+# 2. Merge your fork’s main into your current branch (keeps your commits on top)
 git merge origin/main
 
 # 3. If there are conflicts, resolve them (see below), then:
@@ -27,7 +40,7 @@ git merge origin/main
 git push cardio main
 ```
 
-Or use the helper script:
+Or use the helper script (it uses `origin` = your fork):
 
 ```bash
 ./scripts/update-from-open-webui.sh
@@ -91,7 +104,7 @@ git push cardio main
 
 ## Optional: rebase instead of merge
 
-To keep a linear history with your customizations replayed on top of latest upstream:
+To keep a linear history with your customizations replayed on top of latest from your fork:
 
 ```bash
 git fetch origin
@@ -115,8 +128,9 @@ git apply patches/0001-CardioVerse-custom-branding-config-and-UI.patch
 
 ## Summary
 
-1. **Pull updates:** `git fetch origin && git merge origin/main`
-2. **Resolve conflicts** in the customized files list above (keep CardioVerse when in doubt).
-3. **Push:** `git push cardio main`
+1. **Sync your fork** with [open-webui/open-webui](https://github.com/open-webui/open-webui) (GitHub “Sync fork” or `git fetch upstream && git merge upstream/main && git push` in your fork clone).
+2. **Pull into CardioVerse:** `git fetch origin && git merge origin/main`
+3. **Resolve conflicts** in the customized files list above (keep CardioVerse when in doubt).
+4. **Push:** `git push cardio main`
 
-This way you stay in sync with [Open WebUI](https://github.com/open-webui/open-webui) while keeping CardioVerse branding and behavior.
+This way you stay in sync with Open WebUI via your fork while keeping CardioVerse branding and behavior.
