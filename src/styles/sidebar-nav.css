@@ -1,0 +1,719 @@
+/* Glass-shaped sidebar container - adapted for Open Web UI layout */
+/* iOS 26 Liquid Glass: asymmetric open/close with spring and staggered items */
+/* Use #sidebar for higher specificity to override any conflicting styles */
+#sidebar.sidebar-nav,
+.sidebar-nav {
+	position: fixed;
+	z-index: 50;
+	top: var(--sidebar-margin, 2rem);
+	left: var(--sidebar-margin, 2rem);
+	bottom: var(--sidebar-margin, 2rem);
+	display: flex;
+	flex-direction: row;
+	gap: 0;
+	width: var(--sidebar-width, 260px);
+	box-sizing: border-box;
+	padding: 10px;
+	border: none;
+	border-radius: 30px;
+	overflow: hidden;
+	font-size: 15px;
+	background-image: linear-gradient(
+		135deg,
+		var(--color-gray1),
+		var(--color-gray2) 40%
+	) !important;
+	/* Liquid Glass: backdrop blur + physical thickness */
+	backdrop-filter: blur(24px) saturate(150%);
+	-webkit-backdrop-filter: blur(24px) saturate(150%);
+	border: 1px solid color-mix(in srgb, var(--color-gray1) 18%, transparent);
+	/* Base: closing transition (overridden by collapsed block for explicit control) */
+	transition:
+		width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		border-radius 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		padding 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+	transition-delay: 0.35s;
+	/* Glass morphic box shadows - base (resting) */
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, var(--color-gray1) 10%, transparent),
+		inset 2px 4px 0 -2px color-mix(in srgb, rgba(255, 255, 255, 0.35), transparent),
+		inset 1.8px 3px 0px -2px color-mix(in srgb, var(--color-gray1) 90%, transparent),
+		inset -2px -2px 0px -2px color-mix(in srgb, var(--color-gray1) 30%, transparent),
+		inset -3px -12px 1px -8px color-mix(in srgb, var(--color-gray1) 10%, transparent),
+		inset -0.3px -1px 4px 0px color-mix(in srgb, #000 calc(1 * 12%), transparent),
+		inset -1.5px 2.5px 0px -2px color-mix(in srgb, #000 calc(1 * 20%), transparent),
+		inset 0px 3px 4px -2px color-mix(in srgb, #000 calc(1 * 20%), transparent),
+		inset 2px -6.5px 1px -4px color-mix(in srgb, #000 calc(1 * 10%), transparent),
+		0px 1px 5px 0px color-mix(in srgb, #000 calc(1 * 10%), transparent),
+		0px 6px 16px 0px color-mix(in srgb, #000 calc(1 * 8%), transparent);
+}
+
+/* Opening: spring expansion, no delay, stronger edge light */
+#sidebar.sidebar-nav:not(.sidebar-nav--collapsed),
+.sidebar-nav:not(.sidebar-nav--collapsed) {
+	transition:
+		width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+		border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+		box-shadow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+	transition-delay: 0s;
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, var(--color-gray1) 10%, transparent),
+		inset 2px 4px 0 -2px color-mix(in srgb, rgba(255, 255, 255, 0.5), transparent),
+		inset 1.8px 3px 0px -2px color-mix(in srgb, var(--color-gray1) 90%, transparent),
+		inset -2px -2px 0px -2px color-mix(in srgb, var(--color-gray1) 30%, transparent),
+		inset -3px -12px 1px -8px color-mix(in srgb, var(--color-gray1) 10%, transparent),
+		inset -0.3px -1px 4px 0px color-mix(in srgb, #000 calc(1 * 12%), transparent),
+		inset -1.5px 2.5px 0px -2px color-mix(in srgb, #000 calc(1 * 20%), transparent),
+		inset 0px 3px 4px -2px color-mix(in srgb, #000 calc(1 * 20%), transparent),
+		inset 2px -6.5px 1px -4px color-mix(in srgb, #000 calc(1 * 10%), transparent),
+		0px 1px 5px 0px color-mix(in srgb, #000 calc(1 * 10%), transparent),
+		0px 6px 16px 0px color-mix(in srgb, #000 calc(1 * 8%), transparent);
+}
+
+#sidebar.sidebar-nav.sidebar-nav--collapsed,
+.sidebar-nav.sidebar-nav--collapsed {
+	/* No min/max-width – they would clamp during transition and cause instant snap */
+	width: 56px;
+	/* Symmetric horizontal padding so content area is exactly 40px – icons then align perfectly */
+	padding-inline: 8px;
+	padding-block: 6px;
+	border-radius: 30px;
+	overflow: hidden;
+	/* Closing: force transition – items vanish first (0.2s + stagger), then container shrinks */
+	transition:
+		width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		border-radius 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		padding 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+		box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+	transition-delay: 0.35s; /* Wait for item vanish (0.2s) + reverse stagger (0.12s) */
+	will-change: width;
+}
+
+/* Collapsed strip: only visible when sidebar is collapsed */
+.sidebar-nav__collapsed-strip {
+	flex: 0 0 56px;
+	width: 56px;
+	min-width: 44px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	overflow: hidden;
+	flex-shrink: 0;
+	box-sizing: border-box;
+}
+
+/* When expanded: hide collapsed strip completely */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__collapsed-strip {
+	display: none;
+}
+
+/* When collapsed: strip fills content area (40px) so 40px circles are perfectly centered */
+.sidebar-nav--collapsed .sidebar-nav__collapsed-strip {
+	flex: 1 1 0;
+	min-width: 0;
+	width: 100%;
+	max-width: 40px;
+	display: flex;
+	box-sizing: border-box;
+}
+
+/* Liquid Glass: proper sequencing for collapse
+ * 1. Expanded items blur/vanish (0.2s)
+ * 2. Container shrinks (0.5s, delay 0.35s) → done at 0.85s
+ * 3. Collapsed items unblur (0.45s, delay 0.85s) → done at 1.3s
+ * 4. Active indicator appears (0.25s, delay 1.3s) → done at 1.55s */
+@keyframes collapsed-items-unblur {
+	0% {
+		opacity: 0;
+		filter: blur(12px);
+		transform: scale(0.9);
+	}
+	100% {
+		opacity: 1;
+		filter: none;
+		transform: none;
+	}
+}
+@keyframes collapsed-indicator-appear {
+	0% { opacity: 0; }
+	100% { opacity: 1; }
+}
+.sidebar-nav--collapsed .sidebar-nav__collapsed-strip .sidebar-nav__item {
+	opacity: 0;
+	filter: blur(12px);
+	transform: scale(0.9);
+	animation: collapsed-items-unblur 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.85s forwards;
+}
+/* Indicator appears after collapsed items (1.3s = 0.85s + 0.45s) */
+.sidebar-nav--collapsed .sidebar-nav__collapsed-menu::after {
+	opacity: 0;
+	animation: collapsed-indicator-appear 0.25s ease 1.3s forwards;
+}
+
+/* Expanded content: grows/shrinks with sidebar width transition */
+.sidebar-nav__expanded-content {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 320px; /* Explicit max-width for animation */
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+/* When collapsed: hide expanded content completely (0 width, no layout space) */
+/* overflow: visible so items can animate (blur/scale/fade) before sidebar clips them */
+.sidebar-nav--collapsed .sidebar-nav__expanded-content {
+	min-width: 0 !important;
+	max-width: 0 !important;
+	overflow: visible;
+	opacity: 0;
+	pointer-events: none;
+	padding: 0;
+	margin: 0;
+	/* Container fades with items; max-width delayed so sidebar holds size during item vanish */
+	transition: opacity 0.2s ease, max-width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+	transition-delay: 0s, 0.35s;
+}
+
+/* Opening transition for expanded content so it matches sidebar spring */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content {
+	transition: opacity 0.6s ease, max-width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+	transition-delay: 0s;
+}
+
+/* Liquid Glass: internal items – closing (default). Fast vanish so container can shrink after. */
+.sidebar-nav__expanded-content > * {
+	transition: opacity 0.2s linear, transform 0.2s linear, filter 0.2s linear;
+	transition-delay: 0s;
+}
+.sidebar-nav--collapsed .sidebar-nav__expanded-content > * {
+	opacity: 0;
+	transform: scale(0.8) translateY(10px);
+	filter: blur(12px);
+}
+/* Closing: Instant item collapse with 0s delay for all */
+.sidebar-nav--collapsed .sidebar-nav__expanded-content > * { transition-delay: 0s; }
+
+/* Liquid Glass: opening – items materialize with stagger (spring curve + nth-child delays) */
+/* Use transform: none / filter: none when open to avoid masking/overflow conflicts */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > * {
+	opacity: 1;
+	transform: none;
+	filter: none;
+	transition:
+		opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		filter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(1) { transition-delay: 0.05s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(2) { transition-delay: 0.1s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(3) { transition-delay: 0.15s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(4) { transition-delay: 0.2s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(5) { transition-delay: 0.25s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(6) { transition-delay: 0.3s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(7) { transition-delay: 0.35s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(8) { transition-delay: 0.4s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(9) { transition-delay: 0.45s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__expanded-content > *:nth-child(10) { transition-delay: 0.5s; }
+
+/* Collapsed state: compact icon-only items */
+.sidebar-nav--collapsed .sidebar-nav__item {
+	padding: 8px;
+	justify-content: center;
+	gap: 0;
+	min-width: 40px;
+	min-height: 40px;
+}
+
+.sidebar-nav--collapsed .sidebar-nav__item .sidebar-nav__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Hide text/labels in collapsed items - show only icon */
+.sidebar-nav--collapsed .sidebar-nav__item .sidebar-nav__icon {
+	margin: 0;
+}
+
+.sidebar-nav--collapsed a.sidebar-nav__item,
+.sidebar-nav--collapsed button.sidebar-nav__item {
+	width: 100%;
+}
+
+.sidebar-nav__legend {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	border: 0;
+	padding: 0;
+	white-space: nowrap;
+	clip-path: inset(100%);
+	clip: rect(0 0 0 0);
+	overflow: hidden;
+}
+
+.sidebar-nav__input {
+	clip: rect(0 0 0 0);
+	clip-path: inset(100%);
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	position: absolute;
+	white-space: nowrap;
+}
+
+.sidebar-nav__menu {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	position: relative;
+	z-index: 0;
+	overflow: visible; /* Prevent indicator (::after) from being clipped by ancestors */
+}
+
+/* Liquid Glass: menu and chat items – closing (fast vanish) */
+.sidebar-header,
+.sidebar-nav__menu .sidebar-nav__item,
+.sidebar-chat-list > :not(.sidebar-nav__menu) {
+	transition: opacity 0.2s linear, transform 0.2s linear, filter 0.2s linear;
+	transition-delay: 0s;
+}
+.sidebar-nav--collapsed .sidebar-header,
+.sidebar-nav--collapsed .sidebar-nav__menu .sidebar-nav__item,
+.sidebar-nav--collapsed .sidebar-chat-list > :not(.sidebar-nav__menu) {
+	opacity: 0;
+	transform: scale(0.8) translateY(10px);
+	filter: blur(12px);
+}
+/* Closing: Instant menu item collapse with 0s delay for all */
+.sidebar-nav--collapsed .sidebar-header,
+.sidebar-nav--collapsed .sidebar-nav__menu .sidebar-nav__item,
+.sidebar-nav--collapsed .sidebar-chat-list > :not(.sidebar-nav__menu) { transition-delay: 0s; }
+
+/* Opening: menu and chat items materialize with stagger */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-header,
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item,
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu) {
+	opacity: 1;
+	transform: none;
+	filter: none;
+	transition:
+		opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		filter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		background-color 160ms ease;
+}
+
+/* Stagger for header */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-header { transition-delay: 0.0s; }
+
+/* Stagger for top menu items */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(1) { transition-delay: 0.05s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(2) { transition-delay: 0.1s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(3) { transition-delay: 0.15s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(4) { transition-delay: 0.2s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(5) { transition-delay: 0.25s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-nav__menu .sidebar-nav__item:nth-child(6) { transition-delay: 0.3s; }
+
+/* Stagger for chat list items (folders, chats, etc.) - starting after menu items */
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(2) { transition-delay: 0.25s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(3) { transition-delay: 0.3s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(4) { transition-delay: 0.35s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(5) { transition-delay: 0.4s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(6) { transition-delay: 0.45s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(7) { transition-delay: 0.5s; }
+.sidebar-nav:not(.sidebar-nav--collapsed) .sidebar-chat-list > :not(.sidebar-nav__menu):nth-child(n+8) { transition-delay: 0.55s; }
+
+/* Top nav items (New Chat, Search, Notes, Workspace): pill shape to match indicator */
+.sidebar-nav__menu .sidebar-nav__item {
+	padding: 8px 12px;
+	gap: 12px;
+	border-radius: 99em;
+}
+
+.sidebar-nav__item {
+	--c: var(--color-gray9);
+	display: flex;
+	align-items: center;
+	padding: 12px 20px;
+	border-radius: 14px;
+	opacity: 1;
+	transition: all 160ms, background-color 160ms ease;
+	gap: 16px;
+	color: var(--c);
+	font-weight: 500;
+	text-decoration: none;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.sidebar-nav__item:hover {
+	--c: var(--color-blue);
+	cursor: pointer;
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-nav__item:hover .sidebar-nav__icon {
+	scale: 1.15;
+}
+
+/* No hover effect when item is selected (indicator active) */
+.sidebar-nav__item[data-active="true"]:hover,
+.sidebar-nav__item:has(input:checked):hover {
+	background-color: transparent;
+	cursor: auto;
+}
+.sidebar-nav__item[data-active="true"]:hover .sidebar-nav__icon,
+.sidebar-nav__item:has(input:checked):hover .sidebar-nav__icon {
+	scale: 1;
+}
+
+/* Dark mode hover highlight */
+.dark .sidebar-nav__item:hover,
+html.dark .sidebar-nav__item:hover {
+	background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .sidebar-nav__item[data-active="true"]:hover,
+.dark .sidebar-nav__item:has(input:checked):hover,
+html.dark .sidebar-nav__item[data-active="true"]:hover,
+html.dark .sidebar-nav__item:has(input:checked):hover {
+	background-color: transparent;
+}
+
+.sidebar-nav__item[data-active="true"],
+.sidebar-nav__item:has(input:checked) {
+	color: var(--color-gray1);
+	--c: var(--color-gray1);
+	cursor: auto;
+}
+
+.sidebar-nav__icon {
+	transition: scale 160ms;
+	flex-shrink: 0;
+}
+
+/* Text/label in nav items: wrap or truncate to prevent overflow */
+.sidebar-nav__item .sidebar-nav__label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The active item indicator is an ::after pseudo-element; match item width (items sit in px-2 wrapper) */
+.sidebar-nav__menu::after {
+	content: "";
+	position: absolute;
+	left: 0.5rem;
+	right: 0.5rem;
+	top: 0;
+	height: var(--active-indicator-height, 0);
+	transform: translateY(var(--active-indicator-top, 0));
+	transition:
+		transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
+		height 320ms cubic-bezier(0.32, 0.72, 0, 1);
+	display: block;
+	border-radius: 99em;
+	background-color: rgba(59, 130, 246, 0.8);
+	z-index: -1;
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, #01eeff 20%, transparent),
+		inset 2px 1px 0px -1px color-mix(in srgb, #01eeff 90%, transparent),
+		inset -1.5px -1px 0px -1px color-mix(in srgb, #01eeff 80%, transparent),
+		inset -2px -6px 1px -5px color-mix(in srgb, #01eeff 60%, transparent),
+		inset -1px 2px 3px -1px color-mix(in srgb, #001130 25%, transparent),
+		inset 0px -4px 1px -2px color-mix(in srgb, #000820 15%, transparent),
+		inset 0px 3px 6px 0px color-mix(in srgb, #000820 10%, transparent);
+}
+
+/* Expanded sidebar header: circular hover for logo and toggle (match standard) */
+.sidebar.sidebar-header > a:first-of-type,
+.sidebar.sidebar-header > button {
+	border-radius: 50%;
+}
+
+/* Collapsed strip: full-width wrappers so contents center in 56px column */
+.sidebar-nav__collapsed-strip > button {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+/* Top row: toggle + logo – center the Tooltip wrapper so the button is centered like other items */
+.sidebar-nav__collapsed-strip > button > div:first-child {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+}
+.sidebar-nav__collapsed-strip > button > div:first-child > * {
+	width: fit-content;
+	flex-shrink: 0;
+}
+.sidebar-nav__collapsed-strip > div {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+}
+
+/* Collapsed strip: toggle and user profile – same circular size as nav items; no padding so icon is centered */
+.sidebar-nav__collapsed-strip > button > div:first-child button.sidebar-nav__item,
+.sidebar-nav__collapsed-strip > div .sidebar-nav__item {
+	width: 40px;
+	height: 40px;
+	min-width: 40px;
+	min-height: 40px;
+	padding: 0;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Collapsed strip: circular active indicator and circular hover; gap matches expanded mode */
+.sidebar-nav__collapsed-menu {
+	position: relative;
+	z-index: 0;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+.sidebar-nav__collapsed-menu > div {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+}
+.sidebar-nav__collapsed-menu a.sidebar-nav__item,
+.sidebar-nav__collapsed-menu button.sidebar-nav__item {
+	width: 40px;
+	height: 40px;
+	min-width: 40px;
+	min-height: 40px;
+	padding: 0;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+/* No hover when collapsed item is selected */
+.sidebar-nav__collapsed-menu a.sidebar-nav__item[data-active="true"]:hover,
+.sidebar-nav__collapsed-menu button.sidebar-nav__item[data-active="true"]:hover {
+	background-color: transparent;
+}
+.dark .sidebar-nav__collapsed-menu a.sidebar-nav__item[data-active="true"]:hover,
+.dark .sidebar-nav__collapsed-menu button.sidebar-nav__item[data-active="true"]:hover,
+html.dark .sidebar-nav__collapsed-menu a.sidebar-nav__item[data-active="true"]:hover,
+html.dark .sidebar-nav__collapsed-menu button.sidebar-nav__item[data-active="true"]:hover {
+	background-color: transparent;
+}
+.sidebar-nav__collapsed-menu::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 0;
+	/* 36px to avoid clipping by collapsed strip overflow + sidebar rounded corners */
+	width: 36px;
+	height: 36px;
+	margin-left: -18px;
+	border-radius: 50%;
+	transform: translateY(var(--active-indicator-top, 0));
+	transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+	display: block;
+	background-color: rgba(59, 130, 246, 0.8);
+	z-index: -1;
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, #01eeff 20%, transparent),
+		inset 2px 1px 0px -1px color-mix(in srgb, #01eeff 90%, transparent),
+		inset -1.5px -1px 0px -1px color-mix(in srgb, #01eeff 80%, transparent),
+		inset -2px -6px 1px -5px color-mix(in srgb, #01eeff 60%, transparent),
+		inset -1px 2px 3px -1px color-mix(in srgb, #001130 25%, transparent),
+		inset 0px -4px 1px -2px color-mix(in srgb, #000820 15%, transparent),
+		inset 0px 3px 6px 0px color-mix(in srgb, #000820 10%, transparent);
+}
+.dark .sidebar-nav__collapsed-menu::after,
+html.dark .sidebar-nav__collapsed-menu::after {
+	background-color: rgba(59, 130, 246, 0.9);
+}
+
+/* Bottom menu: no background; only the scrolling items are masked (fade at bottom) */
+.sidebar-nav__bottom-menu {
+	margin-top: auto;
+	background: transparent;
+}
+
+/* Chat list: mask items at bottom so they fade out; no background on bottom bar */
+.sidebar-chat-list {
+	background: transparent;
+	-webkit-mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
+	mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
+	-webkit-mask-size: 100% 100%;
+	mask-size: 100% 100%;
+	-webkit-mask-position: 0 0;
+	mask-position: 0 0;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+.sidebar-chat-list::after,
+.sidebar-chat-list::before {
+	display: none !important;
+}
+
+/* Selected chat item: glass morphic active indicator style (same as nav active pill) */
+#sidebar-chat-item[data-active="true"],
+a.sidebar-nav__item#sidebar-chat-item[data-active="true"],
+button.sidebar-nav__item#sidebar-chat-item[data-active="true"] {
+	background-color: color-mix(in srgb, var(--color-blue) 80%, transparent) !important;
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, #01eeff 20%, transparent),
+		inset 2px 1px 0px -1px color-mix(in srgb, #01eeff 90%, transparent),
+		inset -1.5px -1px 0px -1px color-mix(in srgb, #01eeff 80%, transparent),
+		inset -2px -6px 1px -5px color-mix(in srgb, #01eeff 60%, transparent),
+		inset -1px 2px 3px -1px color-mix(in srgb, #001130 25%, transparent),
+		inset 0px -4px 1px -2px color-mix(in srgb, #000820 15%, transparent),
+		inset 0px 3px 6px 0px color-mix(in srgb, #000820 10%, transparent) !important;
+	color: var(--color-gray1) !important;
+	--c: var(--color-gray1) !important;
+}
+.dark #sidebar-chat-item[data-active="true"],
+.dark a.sidebar-nav__item#sidebar-chat-item[data-active="true"],
+.dark button.sidebar-nav__item#sidebar-chat-item[data-active="true"],
+html.dark #sidebar-chat-item[data-active="true"],
+html.dark a.sidebar-nav__item#sidebar-chat-item[data-active="true"],
+html.dark button.sidebar-nav__item#sidebar-chat-item[data-active="true"] {
+	background-color: color-mix(in srgb, var(--color-blue) 90%, transparent) !important;
+	color: var(--color-gray12) !important;
+	--c: var(--color-gray12) !important;
+}
+
+/* Dark mode styles - glass morphic + Liquid Glass edge */
+.dark .sidebar-nav,
+html.dark .sidebar-nav,
+#sidebar.sidebar-nav.dark {
+	background-image: linear-gradient(
+		135deg,
+		var(--color-gray3),
+		var(--color-gray2) 30%
+	) !important;
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, var(--color-gray8) 4%, transparent),
+		inset 2px 4px 0 -2px color-mix(in srgb, rgba(255, 255, 255, 0.08), transparent),
+		inset 1.8px 3px 0px -2px color-mix(in srgb, var(--color-gray8) 12%, transparent),
+		inset -2px -2px 0px -2px color-mix(in srgb, var(--color-gray8) 10%, transparent),
+		inset -3px -8px 1px -6px color-mix(in srgb, var(--color-gray8) 8%, transparent),
+		inset -0.3px -1px 4px 0px color-mix(in srgb, var(--color-gray7) calc(1 * 25%), transparent),
+		inset -1.5px 2.5px 0px -2px color-mix(in srgb, #000000 calc(1 * 30%), transparent),
+		inset 0px 3px 4px -2px color-mix(in srgb, #000 calc(1 * 30%), transparent),
+		inset 2px -6.5px 1px -4px color-mix(in srgb, #000000 calc(1 * 25%), transparent),
+		0px 1px 5px 0px color-mix(in srgb, #000000 calc(1 * 15%), transparent),
+		0px 6px 16px 0px color-mix(in srgb, #000000 calc(1 * 12%), transparent);
+}
+.dark .sidebar-nav:not(.sidebar-nav--collapsed),
+html.dark .sidebar-nav:not(.sidebar-nav--collapsed) {
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, var(--color-gray8) 4%, transparent),
+		inset 2px 4px 0 -2px color-mix(in srgb, rgba(255, 255, 255, 0.12), transparent),
+		inset 1.8px 3px 0px -2px color-mix(in srgb, var(--color-gray8) 12%, transparent),
+		inset -2px -2px 0px -2px color-mix(in srgb, var(--color-gray8) 10%, transparent),
+		inset -3px -8px 1px -6px color-mix(in srgb, var(--color-gray8) 8%, transparent),
+		inset -0.3px -1px 4px 0px color-mix(in srgb, var(--color-gray7) calc(1 * 25%), transparent),
+		inset -1.5px 2.5px 0px -2px color-mix(in srgb, #000000 calc(1 * 30%), transparent),
+		inset 0px 3px 4px -2px color-mix(in srgb, #000 calc(1 * 30%), transparent),
+		inset 2px -6.5px 1px -4px color-mix(in srgb, #000000 calc(1 * 25%), transparent),
+		0px 1px 5px 0px color-mix(in srgb, #000000 calc(1 * 15%), transparent),
+		0px 6px 16px 0px color-mix(in srgb, #000000 calc(1 * 12%), transparent);
+}
+
+.dark .sidebar-nav__item,
+html.dark .sidebar-nav__item {
+	--c: var(--color-gray11);
+}
+
+.dark .sidebar-nav__item[data-active="true"],
+.dark .sidebar-nav__item:has(input:checked),
+html.dark .sidebar-nav__item[data-active="true"],
+html.dark .sidebar-nav__item:has(input:checked) {
+	color: var(--color-gray12);
+	--c: var(--color-gray12);
+}
+
+.dark .sidebar-nav__menu::after,
+html.dark .sidebar-nav__menu::after {
+	background-color: rgba(59, 130, 246, 0.9);
+}
+
+/* Resizer position: align with sidebar right edge (Liquid Glass timing) */
+#sidebar-resizer {
+	position: fixed;
+	top: var(--sidebar-margin, 2rem);
+	bottom: var(--sidebar-margin, 2rem);
+	left: calc(var(--sidebar-margin, 2rem) + var(--sidebar-width));
+	width: 4px;
+	transition: left 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+	transition-delay: 0.35s;
+}
+#sidebar-resizer:not(.sidebar-resizer--collapsed) {
+	transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+	transition-delay: 0s;
+}
+#sidebar-resizer.sidebar-resizer--collapsed {
+	left: calc(var(--sidebar-margin, 2rem) + 56px);
+}
+
+/* Mobile: overlay sidebar with margin and equal border radius */
+@media (max-width: 767px) {
+	.sidebar-nav--mobile {
+		--mobile-sidebar-margin: 1rem;
+		top: var(--mobile-sidebar-margin) !important;
+		left: var(--mobile-sidebar-margin) !important;
+		bottom: var(--mobile-sidebar-margin) !important;
+		width: min(320px, calc(100vw - 2 * var(--mobile-sidebar-margin))) !important;
+		max-width: calc(100vw - 2 * var(--mobile-sidebar-margin));
+		margin: 0 !important;
+		border-radius: 20px !important;
+		z-index: 50;
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+		padding: 1rem !important;
+	}
+
+	/* On mobile, always show expanded (no collapsed state) */
+	.sidebar-nav--mobile.sidebar-nav--collapsed {
+		width: min(320px, calc(100vw - 2 * var(--mobile-sidebar-margin))) !important;
+		max-width: calc(100vw - 2 * var(--mobile-sidebar-margin));
+	}
+
+	.sidebar-nav--mobile .sidebar-nav__collapsed-strip {
+		display: none !important;
+	}
+
+	.sidebar-nav--mobile .sidebar-nav__expanded-content {
+		flex: 1 1 0 !important;
+		max-width: none !important;
+		opacity: 1 !important;
+		pointer-events: auto !important;
+	}
+
+	/* Consistent border radius for inner items - prevent clipping at edges */
+	.sidebar-nav--mobile .sidebar-nav__item {
+		border-radius: 12px !important;
+	}
+
+	.sidebar-nav--mobile .sidebar-nav__bottom-menu {
+		margin-right: 0;
+		margin-left: 0;
+	}
+
+	.sidebar-nav--mobile .sidebar-nav__bottom-menu > div > div {
+		border-radius: 12px !important;
+	}
+
+	/* Chat items and folder items - consistent radius */
+	.sidebar-nav--mobile #sidebar-chat-item,
+	.sidebar-nav--mobile [id^="sidebar-chat-item"] {
+		border-radius: 12px !important;
+	}
+}

@@ -37,6 +37,7 @@
 	export let pane;
 
 	let mediaQuery;
+	let resizeObserver;
 	let largeScreen = false;
 	let dragged = false;
 
@@ -92,12 +93,13 @@
 
 		// Select the container element you want to observe
 		const container = document.getElementById('chat-container');
+		if (!container) return;
 
 		// initialize the minSize based on the container width
 		minSize = Math.floor((350 / container.clientWidth) * 100);
 
 		// Create a new ResizeObserver instance
-		const resizeObserver = new ResizeObserver((entries) => {
+		resizeObserver = new ResizeObserver((entries) => {
 			for (let entry of entries) {
 				const width = entry.contentRect.width;
 				// calculate the percentage of 350px
@@ -105,8 +107,8 @@
 				// set the minSize to the percentage, must be an integer
 				minSize = Math.floor(percentage);
 
-				if ($showControls) {
-					if (pane && pane.isExpanded() && pane.getSize() < minSize) {
+				if ($showControls && pane) {
+					if (pane.isExpanded() && pane.getSize() < minSize) {
 						pane.resize(minSize);
 					} else {
 						let size = Math.floor(
@@ -130,9 +132,10 @@
 	onDestroy(() => {
 		showControls.set(false);
 
-		mediaQuery.removeEventListener('change', handleMediaQuery);
+		mediaQuery?.removeEventListener('change', handleMediaQuery);
 		document.removeEventListener('mousedown', onMouseDown);
 		document.removeEventListener('mouseup', onMouseUp);
+		resizeObserver?.disconnect();
 	});
 
 	const closeHandler = () => {

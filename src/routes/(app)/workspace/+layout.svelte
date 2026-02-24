@@ -54,8 +54,8 @@
 {#if loaded}
 	<div
 		class=" relative flex flex-col w-full h-screen max-h-[100dvh] transition-width duration-200 ease-in-out {$showSidebar
-			? 'md:max-w-[calc(100%-var(--sidebar-width))]'
-			: ''} max-w-full"
+			? 'sidebar-content-offset'
+			: 'sidebar-content-offset-collapsed'} max-w-full"
 	>
 		<nav class="   px-2.5 pt-1.5 backdrop-blur-xl drag-region">
 			<div class=" flex items-center gap-1">

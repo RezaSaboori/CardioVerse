@@ -2528,8 +2528,8 @@
 
 <div
 	class="h-screen max-h-[100dvh] transition-width duration-200 ease-in-out {$showSidebar
-		? '  md:max-w-[calc(100%-var(--sidebar-width))]'
-		: ' '} w-full max-w-full flex flex-col"
+		? 'sidebar-content-offset'
+		: 'sidebar-content-offset-collapsed'} w-full max-w-full flex flex-col"
 	id="chat-container"
 >
 	{#if !loading}

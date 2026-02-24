@@ -37,34 +37,45 @@
 	}
 
 	const iframeLoadHandler = () => {
-		iframeElement.contentWindow.addEventListener(
-			'click',
-			function (e) {
-				const target = e.target.closest('a');
-				if (target && target.href) {
-					e.preventDefault();
-					const url = new URL(target.href, iframeElement.baseURI);
-					if (url.origin === window.location.origin) {
-						iframeElement.contentWindow.history.pushState(
-							null,
-							'',
-							url.pathname + url.search + url.hash
-						);
-					} else {
-						console.info('External navigation blocked:', url.href);
-					}
-				}
-			},
-			true
-		);
+		// Only add listeners when sandbox allows same-origin; otherwise SecurityError is thrown
+		// and can affect rendering/stacking (e.g. sidebar liquid glass blur)
+		if (!($settings?.iframeSandboxAllowSameOrigin ?? false)) return;
 
-		// Cancel drag when hovering over iframe
-		iframeElement.contentWindow.addEventListener('mouseenter', function (e) {
-			e.preventDefault();
-			iframeElement.contentWindow.addEventListener('dragstart', (event) => {
-				event.preventDefault();
+		const contentWindow = iframeElement?.contentWindow;
+		if (!contentWindow) return;
+
+		try {
+			contentWindow.addEventListener(
+				'click',
+				function (e) {
+					const target = e.target.closest('a');
+					if (target && target.href) {
+						e.preventDefault();
+						const url = new URL(target.href, iframeElement.baseURI);
+						if (url.origin === window.location.origin) {
+							contentWindow.history.pushState(
+								null,
+								'',
+								url.pathname + url.search + url.hash
+							);
+						} else {
+							console.info('External navigation blocked:', url.href);
+						}
+					}
+				},
+				true
+			);
+
+			// Cancel drag when hovering over iframe
+			contentWindow.addEventListener('mouseenter', function (e) {
+				e.preventDefault();
+				contentWindow.addEventListener('dragstart', (event) => {
+					event.preventDefault();
+				});
 			});
-		});
+		} catch {
+			// Fallback: some browsers may still throw in edge cases
+		}
 	};
 
 	const showFullScreen = () => {

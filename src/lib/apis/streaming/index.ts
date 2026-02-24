@@ -52,10 +52,14 @@ async function* openAIStreamToIterator(
 		if (!value) {
 			continue;
 		}
-		const data = value.data;
+		let data = value.data;
 		if (data.startsWith('[DONE]')) {
 			yield { done: true, value: '' };
 			break;
+		}
+		// Some SSE implementations send the raw line including "data: " prefix
+		if (typeof data === 'string' && data.startsWith('data: ')) {
+			data = data.slice(6).trim();
 		}
 
 		try {

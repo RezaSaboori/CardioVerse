@@ -17,9 +17,9 @@
 {#if show}
 	<div
 		bind:this={overlayElement}
-		class="fixed {$showSidebar
-			? 'left-0 md:left-[var(--sidebar-width)] md:w-[calc(100%-var(--sidebar-width))]'
-			: 'left-0'}  fixed top-0 right-0 bottom-0 w-full h-full flex z-9999 touch-none pointer-events-none"
+		class="fixed left-0 top-0 right-0 bottom-0 w-full h-full flex z-9999 touch-none pointer-events-none {$showSidebar
+			? 'md:left-[calc(var(--sidebar-margin,2rem)+var(--sidebar-width))] md:w-[calc(100%-var(--sidebar-margin,2rem)-var(--sidebar-width))]'
+			: 'md:left-[calc(var(--sidebar-margin,2rem)+var(--sidebar-collapsed-width))] md:w-[calc(100%-var(--sidebar-margin,2rem)-var(--sidebar-collapsed-width))]'}"
 		id="dropzone"
 		role="region"
 		aria-label="Drag and Drop Container"

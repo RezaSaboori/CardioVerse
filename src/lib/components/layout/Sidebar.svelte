@@ -1,8 +1,11 @@
 <script lang="ts">
+	import '../../../styles/theme.css';
+	import '../../../styles/sidebar-nav.css';
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
 
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import {
 		user,
 		chats,
@@ -64,14 +67,14 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import PinnedModelList from './Sidebar/PinnedModelList.svelte';
 	import Note from '../icons/Note.svelte';
-	import { slide } from 'svelte/transition';
-	import HotkeyHint from '../common/HotkeyHint.svelte';
 
 	const BREAKPOINT = 768;
 
 	let scrollTop = 0;
 
 	let navElement;
+	let navMenuElement;
+	let collapsedMenuElement;
 	let shiftKey = false;
 
 	let selectedChatId = null;
@@ -96,6 +99,47 @@
 
 	$: if ($selectedFolder) {
 		initFolders();
+	}
+
+	$: if (navMenuElement && $showSidebar && $page) {
+		const measureIndicator = () => {
+			const activeItem = navMenuElement?.querySelector('.sidebar-nav__item[data-active="true"]');
+			if (activeItem && navMenuElement) {
+				/* Use offsetHeight/offsetTop (layout dims) - getBoundingClientRect returns
+				 * post-transform values, so measuring during open animation gives shrunk height */
+				const height = activeItem.offsetHeight;
+				let top = 0;
+				for (let el = activeItem; el && el !== navMenuElement; el = el.offsetParent) {
+					if (!navMenuElement.contains(el)) break;
+					top += el.offsetTop;
+				}
+				navMenuElement.style.setProperty('--active-indicator-height', `${height}px`);
+				navMenuElement.style.setProperty('--active-indicator-top', `${top}px`);
+			} else {
+				navMenuElement?.style.setProperty('--active-indicator-height', '0');
+				navMenuElement?.style.setProperty('--active-indicator-top', '0');
+			}
+		};
+		tick().then(measureIndicator);
+		/* Re-measure after open animation (~0.7s) so indicator stays correct */
+		setTimeout(measureIndicator, 700);
+	}
+
+	$: if (collapsedMenuElement && !$showSidebar && $page) {
+		/* Measure after collapsed items appear (1.35s = 0.85s + 0.45s + buffer) so indicator animates in sync */
+		const measureCollapsedIndicator = () => {
+			const activeItem = collapsedMenuElement?.querySelector('.sidebar-nav__item[data-active="true"]');
+			if (activeItem && collapsedMenuElement) {
+				const rect = activeItem.getBoundingClientRect();
+				const menuRect = collapsedMenuElement.getBoundingClientRect();
+				const circleSize = 36; /* Match .sidebar-nav__collapsed-menu::after size */
+				const top = rect.top - menuRect.top + (rect.height - circleSize) / 2;
+				collapsedMenuElement.style.setProperty('--active-indicator-top', `${top}px`);
+			} else {
+				collapsedMenuElement?.style.setProperty('--active-indicator-top', '0');
+			}
+		};
+		tick().then(() => setTimeout(measureCollapsedIndicator, 1350));
 	}
 
 	const initFolders = async () => {
@@ -687,29 +731,42 @@
 	}}
 />
 
-{#if !$mobile && !$showSidebar}
+{#if !$mobile || $showSidebar || $mobile}
 	<div
-		class=" pt-[7px] pb-2 px-2 flex flex-col justify-between text-black dark:text-white hover:bg-gray-50/30 dark:hover:bg-gray-950/30 h-full z-10 transition-all border-e-[0.5px] border-gray-50 dark:border-gray-850/30"
 		id="sidebar"
+		class="sidebar-nav flex flex-row text-black dark:text-white z-50 select-none {$showSidebar
+			? ''
+			: 'sidebar-nav--collapsed'} {$isApp
+			? 'ml-[4.5rem] md:ml-0'
+			: ''} {$mobile
+			? 'sidebar-nav--mobile'
+			: ''} {$mobile && $showSidebar
+			? 'sidebar-nav--mobile-visible'
+			: ''}"
+		bind:this={navElement}
+		data-state={$showSidebar}
+		style="{$mobile && !$showSidebar ? 'visibility: hidden; pointer-events: none;' : ''}"
 	>
+		<!-- Collapsed strip: always visible, left 56px -->
+		<div class="sidebar-nav__collapsed-strip">
 		<button
-			class="flex flex-col flex-1 {isWindows ? 'cursor-pointer' : 'cursor-[e-resize]'}"
+			class="flex flex-col flex-1 min-h-0 gap-1 p-0 border-0 bg-transparent {isWindows ? 'cursor-pointer' : 'cursor-[e-resize]'}"
 			on:click={async () => {
 				showSidebar.set(!$showSidebar);
 			}}
 		>
-			<div class="pb-1.5">
+			<div class="flex flex-col gap-1 shrink-0 pb-1.5">
 				<Tooltip
 					content={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
 					placement="right"
 				>
 					<button
-						class="flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group {isWindows
+						class="sidebar-nav__item flex rounded-xl group {isWindows
 							? 'cursor-pointer'
 							: 'cursor-[e-resize]'}"
 						aria-label={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
 					>
-						<div class=" self-center flex items-center justify-center size-9">
+						<div class="sidebar-nav__icon self-center flex items-center justify-center size-9">
 							<img
 								src="{WEBUI_BASE_URL}/static/favicon.png"
 								class="sidebar-new-chat-icon size-6 rounded-full group-hover:hidden"
@@ -722,12 +779,13 @@
 				</Tooltip>
 			</div>
 
-			<div class="-mt-[0.5px]">
+			<div class="-mt-[0.5px] sidebar-nav__collapsed-menu relative" bind:this={collapsedMenuElement}>
 				<div class="">
 					<Tooltip content={$i18n.t('New Chat')} placement="right">
 						<a
-							class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
+							class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 							href="/"
+							data-active={$page?.url?.pathname === '/' ? 'true' : 'false'}
 							draggable="false"
 							on:click={async (e) => {
 								e.stopImmediatePropagation();
@@ -738,7 +796,7 @@
 							}}
 							aria-label={$i18n.t('New Chat')}
 						>
-							<div class=" self-center flex items-center justify-center size-9">
+							<div class="sidebar-nav__icon self-center flex items-center justify-center size-9">
 								<PencilSquare className="size-4.5" />
 							</div>
 						</a>
@@ -748,7 +806,8 @@
 				<div>
 					<Tooltip content={$i18n.t('Search')} placement="right">
 						<button
-							class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
+							class="sidebar-nav__item cursor-pointer flex rounded-xl group"
+							data-active="false"
 							on:click={(e) => {
 								e.stopImmediatePropagation();
 								e.preventDefault();
@@ -758,7 +817,7 @@
 							draggable="false"
 							aria-label={$i18n.t('Search')}
 						>
-							<div class=" self-center flex items-center justify-center size-9">
+							<div class="sidebar-nav__icon self-center flex items-center justify-center size-9">
 								<Search className="size-4.5" />
 							</div>
 						</button>
@@ -769,8 +828,9 @@
 					<div class="">
 						<Tooltip content={$i18n.t('Notes')} placement="right">
 							<a
-								class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
+								class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 								href="/notes"
+								data-active={$page?.url?.pathname?.startsWith('/notes') ? 'true' : 'false'}
 								on:click={async (e) => {
 									e.stopImmediatePropagation();
 									e.preventDefault();
@@ -781,7 +841,7 @@
 								draggable="false"
 								aria-label={$i18n.t('Notes')}
 							>
-								<div class=" self-center flex items-center justify-center size-9">
+								<div class="sidebar-nav__icon self-center flex items-center justify-center size-9">
 									<Note className="size-4.5" />
 								</div>
 							</a>
@@ -793,8 +853,9 @@
 					<div class="">
 						<Tooltip content={$i18n.t('Workspace')} placement="right">
 							<a
-								class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
+								class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 								href="/workspace"
+								data-active={$page?.url?.pathname?.startsWith('/workspace') ? 'true' : 'false'}
 								on:click={async (e) => {
 									e.stopImmediatePropagation();
 									e.preventDefault();
@@ -805,7 +866,7 @@
 								aria-label={$i18n.t('Workspace')}
 								draggable="false"
 							>
-								<div class=" self-center flex items-center justify-center size-9">
+								<div class="sidebar-nav__icon self-center flex items-center justify-center size-9">
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
 										fill="none"
@@ -830,7 +891,7 @@
 
 		<div>
 			<div>
-				<div class=" py-2 flex justify-center items-center">
+				<div class="py-0 flex justify-center items-center">
 					{#if $user !== undefined && $user !== null}
 						<UserMenu
 							role={$user?.role}
@@ -843,9 +904,9 @@
 							}}
 						>
 							<div
-								class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
+								class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 							>
-								<div class="self-center relative">
+								<div class="sidebar-nav__icon self-center relative">
 									<img
 										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
 										class=" size-7 object-cover rounded-full"
@@ -872,31 +933,14 @@
 			</div>
 		</div>
 	</div>
-{/if}
 
-<!-- {$i18n.t('New Folder')} -->
-<!-- {$i18n.t('Pinned')} -->
-
-{#if $showSidebar}
-	<div
-		bind:this={navElement}
-		id="sidebar"
-		class="h-screen max-h-[100dvh] min-h-screen select-none {$showSidebar
-			? `${$mobile ? 'bg-gray-50 dark:bg-gray-950' : 'bg-gray-50/70 dark:bg-gray-950/70'} z-50`
-			: ' bg-transparent z-0 '} {$isApp
-			? `ml-[4.5rem] md:ml-0 `
-			: ' transition-all duration-300 '} shrink-0 text-gray-900 dark:text-gray-200 text-sm fixed top-0 left-0 overflow-x-hidden
-        "
-		transition:slide={{ duration: 250, axis: 'x' }}
-		data-state={$showSidebar}
-	>
+	<!-- Expanded content: labels, chat list, etc. -->
+	<div class="sidebar-nav__expanded-content flex flex-col flex-1 min-h-0 overflow-hidden">
 		<div
-			class=" my-auto flex flex-col justify-between h-screen max-h-[100dvh] w-[var(--sidebar-width)] overflow-x-hidden scrollbar-hidden z-50 {$showSidebar
-				? ''
-				: 'invisible'}"
+			class="flex flex-col justify-between flex-1 min-h-0 w-full overflow-x-hidden scrollbar-hidden z-50"
 		>
 			<div
-				class="sidebar px-[0.5625rem] pt-2 pb-1.5 flex justify-between space-x-1 text-gray-600 dark:text-gray-400 sticky top-0 z-10 -mb-3"
+				class="sidebar sidebar-header px-[0.5625rem] pt-2 pb-4 flex justify-between space-x-1 text-gray-600 dark:text-gray-400 sticky top-0 z-10 -mb-3"
 			>
 				<a
 					class="flex items-center rounded-xl size-8.5 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
@@ -939,15 +983,10 @@
 					</button>
 				</Tooltip>
 
-				<div
-					class="{scrollTop > 0
-						? 'visible'
-						: 'invisible'} sidebar-bg-gradient-to-b bg-linear-to-b from-gray-50 dark:from-gray-950 to-transparent from-50% pointer-events-none absolute inset-0 -z-10 -mb-6"
-				></div>
 			</div>
 
 			<div
-				class="relative flex flex-col flex-1 overflow-y-auto scrollbar-hidden pt-3 pb-3"
+				class="sidebar-chat-list relative flex flex-col flex-1 overflow-y-auto scrollbar-hidden pt-5 pb-3"
 				on:scroll={(e) => {
 					if (e.target.scrollTop === 0) {
 						scrollTop = 0;
@@ -956,81 +995,82 @@
 					}
 				}}
 			>
-				<div class="pb-1.5">
-					<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
+				<div class="sidebar-nav__menu pb-3" bind:this={navMenuElement} role="menu">
+					<div class="px-2 flex text-gray-800 dark:text-gray-200">
 						<a
 							id="sidebar-new-chat-button"
-							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
+							class="sidebar-nav__item group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition outline-none"
 							href="/"
 							draggable="false"
 							on:click={newChatHandler}
 							aria-label={$i18n.t('New Chat')}
+							data-active={$page?.url?.pathname === '/' ? 'true' : 'false'}
 						>
-							<div class="self-center">
+							<div class="sidebar-nav__icon self-center">
 								<PencilSquare className=" size-4.5" strokeWidth="2" />
 							</div>
 
-							<div class="flex flex-1 self-center translate-y-[0.5px]">
-								<div class=" self-center text-sm font-primary">{$i18n.t('New Chat')}</div>
+							<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+								<span class="self-center text-sm font-primary truncate">{$i18n.t('New Chat')}</span>
 							</div>
-
-							<HotkeyHint name="newChat" className=" group-hover:visible invisible" />
 						</a>
 					</div>
 
-					<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
+					<div class="px-2 flex text-gray-800 dark:text-gray-200">
 						<button
 							id="sidebar-search-button"
-							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
+							class="sidebar-nav__item group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition outline-none"
 							on:click={() => {
 								showSearch.set(true);
 							}}
 							draggable="false"
 							aria-label={$i18n.t('Search')}
+							data-active="false"
 						>
-							<div class="self-center">
+							<div class="sidebar-nav__icon self-center">
 								<Search strokeWidth="2" className="size-4.5" />
 							</div>
 
-							<div class="flex flex-1 self-center translate-y-[0.5px]">
-								<div class=" self-center text-sm font-primary">{$i18n.t('Search')}</div>
+							<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+								<span class="self-center text-sm font-primary truncate">{$i18n.t('Search')}</span>
 							</div>
-							<HotkeyHint name="search" className=" group-hover:visible invisible" />
 						</button>
 					</div>
 
 					{#if ($config?.features?.enable_notes ?? false) && ($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true))}
-						<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
+						<div class="px-2 flex text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-notes-button"
-								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+								class="sidebar-nav__item grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition"
 								href="/notes"
 								on:click={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Notes')}
+								data-active={$page?.url?.pathname?.startsWith('/notes') ? 'true' : 'false'}
 							>
-								<div class="self-center">
+								<div class="sidebar-nav__icon self-center">
 									<Note className="size-4.5" strokeWidth="2" />
 								</div>
 
-								<div class="flex self-center translate-y-[0.5px]">
-									<div class=" self-center text-sm font-primary">{$i18n.t('Notes')}</div>
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('Notes')}</span>
 								</div>
 							</a>
 						</div>
 					{/if}
 
 					{#if $user?.role === 'admin' || $user?.permissions?.workspace?.models || $user?.permissions?.workspace?.knowledge || $user?.permissions?.workspace?.prompts || $user?.permissions?.workspace?.tools}
-						<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
+						<div class="px-2 flex text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-workspace-button"
-								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+								class="sidebar-nav__item grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition"
 								href="/workspace"
 								on:click={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Workspace')}
+								data-active={$page?.url?.pathname?.startsWith('/workspace') ? 'true' : 'false'}
 							>
-								<div class="self-center">
+								<div class="sidebar-nav__icon self-center">
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
 										fill="none"
@@ -1047,8 +1087,8 @@
 									</svg>
 								</div>
 
-								<div class="flex self-center translate-y-[0.5px]">
-									<div class=" self-center text-sm font-primary">{$i18n.t('Workspace')}</div>
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('Workspace')}</span>
 								</div>
 							</a>
 						</div>
@@ -1394,10 +1434,7 @@
 				</Folder>
 			</div>
 
-			<div class="px-1.5 pt-1.5 pb-2 sticky bottom-0 z-10 -mt-3 sidebar">
-				<div
-					class=" sidebar-bg-gradient-to-t bg-linear-to-t from-gray-50 dark:from-gray-950 to-transparent from-50% pointer-events-none absolute inset-0 -z-10 -mt-6"
-				></div>
+			<div class="sidebar-nav__bottom-menu px-1.5 pt-1.5 pb-2 sticky bottom-0 z-10 -mt-3">
 				<div class="flex flex-col font-primary">
 					{#if $user !== undefined && $user !== null}
 						<UserMenu
@@ -1440,18 +1477,21 @@
 				</div>
 			</div>
 		</div>
+		</div>
 	</div>
 
-	{#if !$mobile}
+	<div
+		class="relative flex items-center justify-center group border-l border-gray-50 dark:border-gray-850/30 hover:border-gray-200 dark:hover:border-gray-800 transition z-20 {$mobile
+			? 'hidden'
+			: $showSidebar
+				? ''
+				: 'sidebar-resizer--collapsed invisible pointer-events-none'}"
+		id="sidebar-resizer"
+		on:mousedown={resizeStartHandler}
+		role="separator"
+	>
 		<div
-			class="relative flex items-center justify-center group border-l border-gray-50 dark:border-gray-850/30 hover:border-gray-200 dark:hover:border-gray-800 transition z-20"
-			id="sidebar-resizer"
-			on:mousedown={resizeStartHandler}
-			role="separator"
-		>
-			<div
-				class=" absolute -left-1.5 -right-1.5 -top-0 -bottom-0 z-20 cursor-col-resize bg-transparent"
-			/>
-		</div>
-	{/if}
+			class=" absolute -left-1.5 -right-1.5 -top-0 -bottom-0 z-20 cursor-col-resize bg-transparent"
+		/>
+	</div>
 {/if}

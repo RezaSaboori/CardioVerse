@@ -498,6 +498,7 @@ from open_webui.env import (
     WEBUI_ADMIN_PASSWORD,
     WEBUI_ADMIN_NAME,
     ENABLE_EASTER_EGGS,
+    COMMUNITY_NAME,
 )
 
 
@@ -718,6 +719,7 @@ app.state.config = AppConfig(
 app.state.redis = None
 
 app.state.WEBUI_NAME = WEBUI_NAME
+app.state.COMMUNITY_NAME = COMMUNITY_NAME
 app.state.LICENSE_METADATA = None
 
 
@@ -2004,6 +2006,7 @@ async def get_app_config(request: Request):
         **({"onboarding": True} if onboarding else {}),
         "status": True,
         "name": app.state.WEBUI_NAME,
+        "community_name": app.state.COMMUNITY_NAME,
         "version": VERSION,
         "default_locale": str(DEFAULT_LOCALE),
         "oauth": {

@@ -135,7 +135,7 @@
 										show = false;
 									}}
 								>
-									{$i18n.t('Share to Open WebUI Community')}
+									{$i18n.t('Share to {{COMMUNITY_NAME}}', { COMMUNITY_NAME: $config?.community_name ?? 'Open WebUI Community' })}
 								</button>
 							{/if}
 

@@ -390,8 +390,8 @@
 				{:else}
 					<div
 						class="w-full flex-1 h-full flex items-center justify-center {$showSidebar
-							? '  md:max-w-[calc(100%-var(--sidebar-width))]'
-							: ' '}"
+							? 'sidebar-content-offset'
+							: 'sidebar-content-offset-collapsed'}"
 					>
 						<Spinner className="size-5" />
 					</div>

@@ -1,3 +1,5 @@
+@import "./styles/theme.css";
+@import "./styles/sidebar-nav.css";
 @reference "./tailwind.css";
 
 @font-face {
@@ -33,6 +35,29 @@
 /* --app-text-scale is updated via the UI Scale slider (Interface.svelte) */
 :root {
 	--app-text-scale: 1;
+	--sidebar-collapsed-width: 56px;
+}
+
+/* Content area offset when sidebar has margin (floating glass style) */
+
+@media (min-width: 768px) {
+	/* Opening: spring, no delay (match sidebar) */
+	.sidebar-content-offset {
+		margin-left: calc(var(--sidebar-width) + var(--sidebar-margin, 2rem));
+		max-width: calc(100% - var(--sidebar-width) - var(--sidebar-margin, 2rem));
+		transition: margin-left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+			max-width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+		transition-delay: 0s;
+	}
+
+	/* Closing: 0.35s delay + 0.5s shrink (match sidebar Liquid Glass item vanish) */
+	.sidebar-content-offset-collapsed {
+		margin-left: calc(var(--sidebar-collapsed-width) + var(--sidebar-margin, 2rem));
+		max-width: calc(100% - var(--sidebar-collapsed-width) - var(--sidebar-margin, 2rem));
+		transition: margin-left 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+			max-width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+		transition-delay: 0.35s;
+	}
 }
 
 html {
@@ -46,6 +71,13 @@ html {
 	min-height: calc(32px * var(--app-text-scale, 1));
 	padding-inline: calc(11px * var(--app-text-scale, 1));
 	padding-block: calc(6px * var(--app-text-scale, 1));
+	/* reserve right space for three-dots menu only when selected or hovered */
+	transition: padding-right 160ms ease;
+}
+
+.group:hover > #sidebar-chat-item,
+#sidebar-chat-item[data-active="true"] {
+	padding-right: calc(40px * var(--app-text-scale, 1));
 }
 
 #sidebar-chat-item div[dir='auto'] {

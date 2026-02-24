@@ -259,6 +259,7 @@ type Config = {
 	license_metadata: any;
 	status: boolean;
 	name: string;
+	community_name?: string;
 	version: string;
 	default_locale: string;
 	default_models: string;

@@ -1,4 +1,8 @@
-export const APP_NAME = 'Open WebUI';
+// Branding: from .env WEBUI_NAME (injected at build time via vite.config.ts)
+export const APP_NAME =
+	(typeof import.meta !== 'undefined' &&
+		(import.meta as { env?: { VITE_WEBUI_NAME?: string } }).env?.VITE_WEBUI_NAME) ||
+	'Open WebUI';
 
 // Force relative paths so Vite Proxy handles the routing internally
 // This prevents CORS and localhost resolution errors when accessing remotely.

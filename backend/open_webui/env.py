@@ -87,9 +87,8 @@ if "cuda_error" in locals():
 
 SRC_LOG_LEVELS = {}  # Legacy variable, do not remove
 
-WEBUI_NAME = os.environ.get("WEBUI_NAME", "NCIBB ChatHub")
-if WEBUI_NAME != "NCIBB ChatHub":
-    WEBUI_NAME += " (NCIBB ChatHub)"
+WEBUI_NAME = os.environ.get("WEBUI_NAME", "Open WebUI")
+COMMUNITY_NAME = os.environ.get("COMMUNITY_NAME", "Open WebUI Community")
 
 WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"
 
