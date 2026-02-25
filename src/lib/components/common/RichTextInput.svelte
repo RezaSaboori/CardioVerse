@@ -259,6 +259,7 @@
 	export let largeTextAsFile = false;
 	export let insertPromptAsRichText = false;
 	export let floatingMenuPlacement = 'bottom-start';
+	export let direction: 'ltr' | 'rtl' | 'auto' = 'auto';
 
 	let content = null;
 	let htmlValue = '';
@@ -1212,6 +1213,6 @@
 
 <div
 	bind:this={element}
-	dir="auto"
+	dir={direction}
 	class="relative w-full min-w-full {className} {!editable ? 'cursor-not-allowed' : ''}"
 />

@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { models, showSettings, settings, user, mobile, config } from '$lib/stores';
-	import { onMount, tick, getContext } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import Selector from './ModelSelector/Selector.svelte';
-	import Tooltip from '../common/Tooltip.svelte';
+import { models, showSettings, settings, user, mobile, config } from '$lib/stores';
+import { onMount, tick, getContext } from 'svelte';
+import { toast } from 'svelte-sonner';
+import Selector from './ModelSelector/Selector.svelte';
+import Tooltip from '../common/Tooltip.svelte';
+import { isRTL } from '$lib/i18n';
 
-	import { updateUserSettings } from '$lib/apis/users';
-	const i18n = getContext('i18n');
+import { updateUserSettings } from '$lib/apis/users';
+const i18n = getContext('i18n');
 
 	export let selectedModels = [''];
 	export let disabled = false;
@@ -129,7 +130,7 @@
 
 {#if showSetDefault}
 	<div
-		class="relative text-left mt-[1px] ml-1 text-[0.7rem] text-gray-600 dark:text-gray-400 font-primary"
+		class="relative {$isRTL ? 'text-right mr-1' : 'text-left ml-1'} mt-[1px] text-[0.7rem] text-gray-600 dark:text-gray-400 font-primary"
 	>
 		<button on:click={saveDefaultModel}> {$i18n.t('Set as default')}</button>
 	</div>

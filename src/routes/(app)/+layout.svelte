@@ -36,6 +36,7 @@
 		showSearch,
 		showSidebar
 	} from '$lib/stores';
+	import { isRTL } from '$lib/i18n';
 
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
@@ -386,7 +387,9 @@
 				<Sidebar />
 
 				{#if loaded}
-					<slot />
+					<div class="flex-1 {$isRTL ? 'rtl-content' : ''}">
+						<slot />
+					</div>
 				{:else}
 					<div
 						class="w-full flex-1 h-full flex items-center justify-center {$showSidebar

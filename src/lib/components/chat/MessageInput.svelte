@@ -33,6 +33,7 @@
 		TTSWorker,
 		temporaryChatEnabled
 	} from '$lib/stores';
+	import { isRTL } from '$lib/i18n';
 
 	import {
 		convertHeicToJpeg,
@@ -1319,6 +1320,7 @@
 													bind:this={chatInputElement}
 													id="chat-input"
 													editable={!showInputModal}
+													direction={$isRTL ? 'rtl' : 'ltr'}
 													onChange={(content) => {
 														prompt = content.md;
 														inputContent = content;

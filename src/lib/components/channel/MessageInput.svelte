@@ -7,6 +7,7 @@
 	const i18n = getContext('i18n');
 
 	import { config, mobile, settings, socket, user } from '$lib/stores';
+	import { isRTL } from '$lib/i18n';
 	import {
 		convertHeicToJpeg,
 		compressImage,
@@ -876,6 +877,7 @@
 											json={true}
 											messageInput={true}
 											editable={!disabled}
+											direction={$isRTL ? 'rtl' : 'ltr'}
 											{placeholder}
 											richText={$settings?.richTextInput ?? true}
 											showFormattingToolbar={$settings?.showFormattingToolbar ?? false}

@@ -23,6 +23,7 @@
 		settings,
 		config
 	} from '$lib/stores';
+	import { isRTL } from '$lib/i18n';
 	import { toast } from 'svelte-sonner';
 	import { capitalizeFirstLetter, sanitizeResponseContent, splitStream } from '$lib/utils';
 	import { getModels } from '$lib/apis';
@@ -422,7 +423,7 @@
 			{:else}
 				{placeholder}
 			{/if}
-			<ChevronDown className=" self-center ml-2 size-3" strokeWidth="2.5" />
+			<ChevronDown className="self-center {$isRTL ? 'mr-2' : 'ml-2'} size-3" strokeWidth="2.5" />
 		</div>
 	</DropdownMenu.Trigger>
 

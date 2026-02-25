@@ -35,6 +35,7 @@
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
 	const i18n = getContext('i18n');
+import { isRTL } from '$lib/i18n';
 
 	import {
 		getChatList,
@@ -451,7 +452,11 @@
 	};
 
 	const resizeSidebarHandler = (endClientX) => {
-		const dx = endClientX - startClientX;
+		let dx = endClientX - startClientX;
+		// In RTL mode, invert the delta since sidebar is on the right
+		if ($isRTL) {
+			dx = -dx;
+		}
 		const newSidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + dx));
 
 		sidebarWidth.set(newSidebarWidth);
@@ -742,9 +747,10 @@
 			? 'sidebar-nav--mobile'
 			: ''} {$mobile && $showSidebar
 			? 'sidebar-nav--mobile-visible'
-			: ''}"
+			: ''} {$isRTL ? 'sidebar-nav--rtl' : ''}"
 		bind:this={navElement}
 		data-state={$showSidebar}
+		data-rtl={$isRTL}
 		style="{$mobile && !$showSidebar ? 'visibility: hidden; pointer-events: none;' : ''}"
 	>
 		<!-- Collapsed strip: always visible, left 56px -->
@@ -758,7 +764,7 @@
 			<div class="flex flex-col gap-1 shrink-0 pb-1.5">
 				<Tooltip
 					content={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
-					placement="right"
+					placement={$isRTL ? 'left' : 'right'}
 				>
 					<button
 						class="sidebar-nav__item flex rounded-xl group {isWindows
@@ -781,7 +787,7 @@
 
 			<div class="-mt-[0.5px] sidebar-nav__collapsed-menu relative" bind:this={collapsedMenuElement}>
 				<div class="">
-					<Tooltip content={$i18n.t('New Chat')} placement="right">
+					<Tooltip content={$i18n.t('New Chat')} placement={$isRTL ? 'left' : 'right'}>
 						<a
 							class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 							href="/"
@@ -804,7 +810,7 @@
 				</div>
 
 				<div>
-					<Tooltip content={$i18n.t('Search')} placement="right">
+					<Tooltip content={$i18n.t('Search')} placement={$isRTL ? 'left' : 'right'}>
 						<button
 							class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 							data-active="false"
@@ -826,7 +832,7 @@
 
 				{#if ($config?.features?.enable_notes ?? false) && ($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true))}
 					<div class="">
-						<Tooltip content={$i18n.t('Notes')} placement="right">
+						<Tooltip content={$i18n.t('Notes')} placement={$isRTL ? 'left' : 'right'}>
 							<a
 								class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 								href="/notes"
@@ -851,7 +857,7 @@
 
 				{#if $user?.role === 'admin' || $user?.permissions?.workspace?.models || $user?.permissions?.workspace?.knowledge || $user?.permissions?.workspace?.prompts || $user?.permissions?.workspace?.tools}
 					<div class="">
-						<Tooltip content={$i18n.t('Workspace')} placement="right">
+						<Tooltip content={$i18n.t('Workspace')} placement={$isRTL ? 'left' : 'right'}>
 							<a
 								class="sidebar-nav__item cursor-pointer flex rounded-xl group"
 								href="/workspace"
@@ -935,53 +941,57 @@
 	</div>
 
 	<!-- Expanded content: labels, chat list, etc. -->
-	<div class="sidebar-nav__expanded-content flex flex-col flex-1 min-h-0 overflow-hidden">
+	<div class="sidebar-nav__expanded-content flex flex-col flex-1 min-h-0 overflow-hidden {$isRTL ? 'sidebar-nav__expanded-content--rtl' : ''}">
 		<div
 			class="flex flex-col justify-between flex-1 min-h-0 w-full overflow-x-hidden scrollbar-hidden z-50"
 		>
-			<div
-				class="sidebar sidebar-header px-[0.5625rem] pt-2 pb-4 flex justify-between space-x-1 text-gray-600 dark:text-gray-400 sticky top-0 z-10 -mb-3"
-			>
-				<a
-					class="flex items-center rounded-xl size-8.5 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
-					href="/"
-					draggable="false"
-					on:click={newChatHandler}
-				>
-					<img
-						crossorigin="anonymous"
-						src="{WEBUI_BASE_URL}/static/favicon.png"
-						class="sidebar-new-chat-icon size-6 rounded-full"
-						alt=""
-					/>
-				</a>
-
-				<a href="/" class="flex flex-1 px-1.5" on:click={newChatHandler}>
-					<div
-						id="sidebar-webui-name"
-						class=" self-center font-medium text-gray-850 dark:text-white font-primary"
+<div
+		class="sidebar sidebar-header px-[0.5625rem] pt-2 pb-4 flex justify-between {$isRTL ? 'flex-row-reverse' : ''} text-gray-600 dark:text-gray-400 sticky top-0 z-10 -mb-3"
+		>
+				<!-- In RTL: Favicon + Text should be together on the right -->
+				<div class="flex items-center {$isRTL ? 'flex-row' : ''}">
+					<a
+						class="flex items-center rounded-xl size-8.5 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region {$isRTL ? 'order-2 ml-2' : ''}"
+						href="/"
+						draggable="false"
+						on:click={newChatHandler}
 					>
-						{$WEBUI_NAME}
-					</div>
-				</a>
+						<img
+							crossorigin="anonymous"
+							src="{WEBUI_BASE_URL}/static/favicon.png"
+							class="sidebar-new-chat-icon size-6 rounded-full"
+							alt=""
+						/>
+					</a>
+
+					<a href="/" class="flex {$isRTL ? 'order-1' : 'flex-1'} px-1.5" on:click={newChatHandler}>
+						<div
+							id="sidebar-webui-name"
+							class=" self-center font-medium text-gray-850 dark:text-white font-primary"
+						>
+							{$WEBUI_NAME}
+						</div>
+					</a>
+				</div>
+
 				<Tooltip
 					content={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
-					placement="bottom"
+					placement={$isRTL ? 'bottom' : 'bottom'}
 				>
 					<button
 						class="flex rounded-xl size-8.5 justify-center items-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition {isWindows
 							? 'cursor-pointer'
-							: 'cursor-[w-resize]'}"
-						on:click={() => {
-							showSidebar.set(!$showSidebar);
-						}}
-						aria-label={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
-					>
-						<div class=" self-center p-1.5">
-							<Sidebar />
-						</div>
-					</button>
-				</Tooltip>
+							: $isRTL ? 'cursor-[e-resize]' : 'cursor-[w-resize]'}"
+							on:click={() => {
+								showSidebar.set(!$showSidebar);
+							}}
+							aria-label={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
+						>
+							<div class=" self-center p-1.5">
+								<Sidebar />
+							</div>
+						</button>
+					</Tooltip>
 
 			</div>
 
@@ -995,31 +1005,40 @@
 					}
 				}}
 			>
-				<div class="sidebar-nav__menu pb-3" bind:this={navMenuElement} role="menu">
+				<div class="sidebar-nav__menu pb-3 {$isRTL ? 'sidebar-nav__menu--rtl' : ''}" bind:this={navMenuElement} role="menu">
 					<div class="px-2 flex text-gray-800 dark:text-gray-200">
 						<a
 							id="sidebar-new-chat-button"
-							class="sidebar-nav__item group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition outline-none"
+							class="sidebar-nav__item group grow flex items-center gap-3 rounded-2xl px-2.5 py-2 transition outline-none"
 							href="/"
 							draggable="false"
 							on:click={newChatHandler}
 							aria-label={$i18n.t('New Chat')}
 							data-active={$page?.url?.pathname === '/' ? 'true' : 'false'}
 						>
-							<div class="sidebar-nav__icon self-center">
-								<PencilSquare className=" size-4.5" strokeWidth="2" />
-							</div>
-
-							<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
-								<span class="self-center text-sm font-primary truncate">{$i18n.t('New Chat')}</span>
-							</div>
+							{#if $isRTL}
+								<!-- In RTL: Text first (on right), then icon -->
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px] text-right">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('New Chat')}</span>
+								</div>
+								<div class="sidebar-nav__icon self-center">
+									<PencilSquare className=" size-4.5" strokeWidth="2" />
+								</div>
+							{:else}
+								<div class="sidebar-nav__icon self-center">
+									<PencilSquare className=" size-4.5" strokeWidth="2" />
+								</div>
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('New Chat')}</span>
+								</div>
+							{/if}
 						</a>
 					</div>
 
 					<div class="px-2 flex text-gray-800 dark:text-gray-200">
 						<button
 							id="sidebar-search-button"
-							class="sidebar-nav__item group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition outline-none"
+							class="sidebar-nav__item group grow flex items-center gap-3 rounded-2xl px-2.5 py-2 transition outline-none"
 							on:click={() => {
 								showSearch.set(true);
 							}}
@@ -1027,13 +1046,22 @@
 							aria-label={$i18n.t('Search')}
 							data-active="false"
 						>
-							<div class="sidebar-nav__icon self-center">
-								<Search strokeWidth="2" className="size-4.5" />
-							</div>
-
-							<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
-								<span class="self-center text-sm font-primary truncate">{$i18n.t('Search')}</span>
-							</div>
+							{#if $isRTL}
+								<!-- In RTL: Text first (on right), then icon -->
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px] text-right">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('Search')}</span>
+								</div>
+								<div class="sidebar-nav__icon self-center">
+									<Search strokeWidth="2" className="size-4.5" />
+								</div>
+							{:else}
+								<div class="sidebar-nav__icon self-center">
+									<Search strokeWidth="2" className="size-4.5" />
+								</div>
+								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+									<span class="self-center text-sm font-primary truncate">{$i18n.t('Search')}</span>
+								</div>
+							{/if}
 						</button>
 					</div>
 
@@ -1041,20 +1069,29 @@
 						<div class="px-2 flex text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-notes-button"
-								class="sidebar-nav__item grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition"
+								class="sidebar-nav__item grow flex items-center gap-3 rounded-2xl px-2.5 py-2 transition"
 								href="/notes"
 								on:click={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Notes')}
 								data-active={$page?.url?.pathname?.startsWith('/notes') ? 'true' : 'false'}
 							>
-								<div class="sidebar-nav__icon self-center">
-									<Note className="size-4.5" strokeWidth="2" />
-								</div>
-
-								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
-									<span class="self-center text-sm font-primary truncate">{$i18n.t('Notes')}</span>
-								</div>
+								{#if $isRTL}
+									<!-- In RTL: Text first (on right), then icon -->
+									<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px] text-right">
+										<span class="self-center text-sm font-primary truncate">{$i18n.t('Notes')}</span>
+									</div>
+									<div class="sidebar-nav__icon self-center">
+										<Note className="size-4.5" strokeWidth="2" />
+									</div>
+								{:else}
+									<div class="sidebar-nav__icon self-center">
+										<Note className="size-4.5" strokeWidth="2" />
+									</div>
+									<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+										<span class="self-center text-sm font-primary truncate">{$i18n.t('Notes')}</span>
+									</div>
+								{/if}
 							</a>
 						</div>
 					{/if}
@@ -1063,70 +1100,92 @@
 						<div class="px-2 flex text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-workspace-button"
-								class="sidebar-nav__item grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 transition"
+								class="sidebar-nav__item grow flex items-center gap-3 rounded-2xl px-2.5 py-2 transition"
 								href="/workspace"
 								on:click={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Workspace')}
 								data-active={$page?.url?.pathname?.startsWith('/workspace') ? 'true' : 'false'}
 							>
-								<div class="sidebar-nav__icon self-center">
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="2"
-										stroke="currentColor"
-										class="size-4.5"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
-										/>
-									</svg>
-								</div>
-
-								<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
-									<span class="self-center text-sm font-primary truncate">{$i18n.t('Workspace')}</span>
-								</div>
+								{#if $isRTL}
+									<!-- In RTL: Text first (on right), then icon -->
+									<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px] text-right">
+										<span class="self-center text-sm font-primary truncate">{$i18n.t('Workspace')}</span>
+									</div>
+									<div class="sidebar-nav__icon self-center">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke-width="2"
+											stroke="currentColor"
+											class="size-4.5"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
+											/>
+										</svg>
+									</div>
+								{:else}
+									<div class="sidebar-nav__icon self-center">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke-width="2"
+											stroke="currentColor"
+											class="size-4.5"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
+											/>
+										</svg>
+									</div>
+									<div class="sidebar-nav__label flex flex-1 min-w-0 self-center translate-y-[0.5px]">
+										<span class="self-center text-sm font-primary truncate">{$i18n.t('Workspace')}</span>
+									</div>
+								{/if}
 							</a>
 						</div>
 					{/if}
 				</div>
 
-				{#if ($models ?? []).length > 0 && (($settings?.pinnedModels ?? []).length > 0 || $config?.default_pinned_models)}
-					<Folder
-						id="sidebar-models"
-						bind:open={showPinnedModels}
-						className="px-2 mt-0.5"
-						name={$i18n.t('Models')}
-						chevron={false}
-						dragAndDrop={false}
-					>
-						<PinnedModelList bind:selectedChatId {shiftKey} />
-					</Folder>
-				{/if}
+			{#if ($models ?? []).length > 0 && (($settings?.pinnedModels ?? []).length > 0 || $config?.default_pinned_models)}
+				<Folder
+					id="sidebar-models"
+					bind:open={showPinnedModels}
+					className="px-2 mt-1"
+					name={$i18n.t('Models')}
+					chevron={true}
+					dragAndDrop={false}
+				>
+					<PinnedModelList bind:selectedChatId {shiftKey} />
+				</Folder>
+			{/if}
 
-				{#if $config?.features?.enable_channels && ($user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true))}
-					<Folder
-						id="sidebar-channels"
-						bind:open={showChannels}
-						className="px-2 mt-0.5"
-						name={$i18n.t('Channels')}
-						chevron={false}
-						dragAndDrop={false}
-						onAdd={$user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true)
-							? async () => {
-									await tick();
+			{#if $config?.features?.enable_channels && ($user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true))}
+				<Folder
+					id="sidebar-channels"
+					bind:open={showChannels}
+					className="px-2 mt-1"
+					name={$i18n.t('Channels')}
+					chevron={true}
+					dragAndDrop={false}
+					onAdd={$user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true)
+						? async () => {
+								await tick();
 
-									setTimeout(() => {
-										showCreateChannel = true;
-									}, 0);
-								}
-							: null}
-						onAddLabel={$i18n.t('Create Channel')}
-					>
+								setTimeout(() => {
+									showCreateChannel = true;
+								}, 0);
+							}
+						: null}
+					onAddLabel={$i18n.t('Create Channel')}
+				>
 						{#each $channels as channel, channelIdx (`${channel?.id}`)}
 							<ChannelItem
 								{channel}
@@ -1143,17 +1202,17 @@
 					</Folder>
 				{/if}
 
-				{#if $config?.features?.enable_folders && ($user?.role === 'admin' || ($user?.permissions?.features?.folders ?? true))}
-					<Folder
-						id="sidebar-folders"
-						bind:open={showFolders}
-						className="px-2 mt-0.5"
-						name={$i18n.t('Folders')}
-						chevron={false}
-						onAdd={() => {
-							showCreateFolderModal = true;
-						}}
-						onAddLabel={$i18n.t('New Folder')}
+			{#if $config?.features?.enable_folders && ($user?.role === 'admin' || ($user?.permissions?.features?.folders ?? true))}
+				<Folder
+					id="sidebar-folders"
+					bind:open={showFolders}
+					className="px-2 mt-1"
+					name={$i18n.t('Folders')}
+					chevron={true}
+					onAdd={() => {
+						showCreateFolderModal = true;
+					}}
+					onAddLabel={$i18n.t('New Folder')}
 						on:drop={async (e) => {
 							const { type, id, item } = e.detail;
 
@@ -1197,14 +1256,14 @@
 					</Folder>
 				{/if}
 
-				<Folder
-					id="sidebar-chats"
-					className="px-2 mt-0.5"
-					name={$i18n.t('Chats')}
-					chevron={false}
-					on:change={async (e) => {
-						selectedFolder.set(null);
-					}}
+			<Folder
+				id="sidebar-chats"
+				className="px-2 mt-1"
+				name={$i18n.t('Chats')}
+				chevron={true}
+				on:change={async (e) => {
+					selectedFolder.set(null);
+				}}
 					on:import={(e) => {
 						importChatHandler(e.detail);
 					}}
@@ -1266,11 +1325,12 @@
 					}}
 				>
 					{#if $pinnedChats.length > 0}
-						<div class="mb-1">
+						<div class="mb-2 mt-1">
 							<div class="flex flex-col space-y-1 rounded-xl">
 								<Folder
 									id="sidebar-pinned-chats"
-									buttonClassName=" text-gray-500"
+									buttonClassName="text-gray-600 dark:text-gray-400"
+									chevron={true}
 									on:import={(e) => {
 										importChatHandler(e.detail, true);
 									}}
@@ -1318,7 +1378,7 @@
 									name={$i18n.t('Pinned')}
 								>
 									<div
-										class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900 text-gray-900 dark:text-gray-200"
+										class="{$isRTL ? 'mr-3 pr-1 border-r' : 'ml-3 pl-1 border-s'} mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-gray-100 dark:border-gray-900 text-gray-900 dark:text-gray-200"
 									>
 										{#each $pinnedChats as chat, idx (`pinned-chat-${chat?.id ?? idx}`)}
 											<ChatItem
@@ -1355,7 +1415,7 @@
 								{#each $chats as chat, idx (`chat-${chat?.id ?? idx}`)}
 									{#if idx === 0 || (idx > 0 && chat.time_range !== $chats[idx - 1].time_range)}
 										<div
-											class="w-full pl-2.5 text-xs text-gray-500 dark:text-gray-500 font-medium {idx ===
+											class="w-full {$isRTL ? 'pr-2.5 text-right' : 'pl-2.5'} text-xs text-gray-500 dark:text-gray-500 font-medium {idx ===
 											0
 												? ''
 												: 'pt-5'} pb-1.5"
@@ -1437,19 +1497,43 @@
 			<div class="sidebar-nav__bottom-menu px-1.5 pt-1.5 pb-2 sticky bottom-0 z-10 -mt-3">
 				<div class="flex flex-col font-primary">
 					{#if $user !== undefined && $user !== null}
-						<UserMenu
-							role={$user?.role}
-							profile={$config?.features?.enable_user_status ?? true}
-							showActiveUsers={false}
-							on:show={(e) => {
-								if (e.detail === 'archived-chat') {
-									showArchivedChats.set(true);
-								}
-							}}
+<UserMenu
+						role={$user?.role}
+						profile={$config?.features?.enable_user_status ?? true}
+						showActiveUsers={false}
+						on:show={(e) => {
+							if (e.detail === 'archived-chat') {
+								showArchivedChats.set(true);
+							}
+						}}
+					>
+						<div
+							class=" flex items-center justify-between rounded-2xl py-2 px-1.5 w-full hover:bg-gray-100/50 dark:hover:bg-gray-900/50 transition"
 						>
-							<div
-								class=" flex items-center rounded-2xl py-2 px-1.5 w-full hover:bg-gray-100/50 dark:hover:bg-gray-900/50 transition"
-							>
+							{#if $isRTL}
+								<!-- In RTL: Username first (left side), then profile icon on far right -->
+								<div class=" self-center font-medium flex-1 text-right mr-3">{$user?.name}</div>
+								<div class=" self-center relative">
+									<img
+										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
+										class=" size-7 object-cover rounded-full"
+										alt={$i18n.t('Open User Profile Menu')}
+										aria-label={$i18n.t('Open User Profile Menu')}
+									/>
+									{#if $config?.features?.enable_user_status}
+										<div class="absolute -bottom-0.5 -right-0.5">
+											<span class="relative flex size-2.5">
+												<span
+													class="relative inline-flex size-2.5 rounded-full {true
+														? 'bg-green-500'
+														: 'bg-gray-300 dark:bg-gray-700'} border-2 border-white dark:border-gray-900"
+												></span>
+											</span>
+										</div>
+									{/if}
+								</div>
+							{:else}
+								<!-- LTR: Profile icon first, then username -->
 								<div class=" self-center mr-3 relative">
 									<img
 										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
@@ -1457,7 +1541,6 @@
 										alt={$i18n.t('Open User Profile Menu')}
 										aria-label={$i18n.t('Open User Profile Menu')}
 									/>
-
 									{#if $config?.features?.enable_user_status}
 										<div class="absolute -bottom-0.5 -right-0.5">
 											<span class="relative flex size-2.5">
@@ -1471,8 +1554,9 @@
 									{/if}
 								</div>
 								<div class=" self-center font-medium">{$user?.name}</div>
-							</div>
-						</UserMenu>
+							{/if}
+						</div>
+					</UserMenu>
 					{/if}
 				</div>
 			</div>
@@ -1485,7 +1569,7 @@
 			? 'hidden'
 			: $showSidebar
 				? ''
-				: 'sidebar-resizer--collapsed invisible pointer-events-none'}"
+				: 'sidebar-resizer--collapsed invisible pointer-events-none'} {$isRTL ? 'sidebar-resizer--rtl' : ''}"
 		id="sidebar-resizer"
 		on:mousedown={resizeStartHandler}
 		role="separator"

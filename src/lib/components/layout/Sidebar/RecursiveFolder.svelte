@@ -28,10 +28,12 @@
 		importChats
 	} from '$lib/apis/chats';
 
-	import ChevronDown from '../../icons/ChevronDown.svelte';
-	import ChevronRight from '../../icons/ChevronRight.svelte';
-	import Collapsible from '../../common/Collapsible.svelte';
-	import DragGhost from '$lib/components/common/DragGhost.svelte';
+import ChevronDown from '../../icons/ChevronDown.svelte';
+import ChevronRight from '../../icons/ChevronRight.svelte';
+import ChevronLeft from '../../icons/ChevronLeft.svelte';
+import Collapsible from '../../common/Collapsible.svelte';
+import DragGhost from '$lib/components/common/DragGhost.svelte';
+import { isRTL } from '$lib/i18n';
 
 	import FolderOpen from '$lib/components/icons/FolderOpen.svelte';
 	import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';
@@ -516,89 +518,177 @@
 					e.stopPropagation();
 				}}
 			>
-				<button
-					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
-					on:click={(e) => {
-						e.stopPropagation();
-						e.stopImmediatePropagation();
-						open = !open;
-						isExpandedUpdateDebounceHandler();
-					}}
-				>
-					{#if folders[folderId]?.meta?.icon}
-						<div class="flex group-hover:hidden transition-all">
-							<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
-						</div>
-
-						<div class="hidden group-hover:flex transition-all p-[1px]">
-							{#if open}
-								<ChevronDown className=" size-3" strokeWidth="2.5" />
-							{:else}
-								<ChevronRight className=" size-3" strokeWidth="2.5" />
-							{/if}
-						</div>
-					{:else}
-						<div class="p-[1px]">
-							{#if open}
-								<ChevronDown className=" size-3" strokeWidth="2.5" />
-							{:else}
-								<ChevronRight className=" size-3" strokeWidth="2.5" />
-							{/if}
-						</div>
-					{/if}
-				</button>
-
-				<div class="translate-y-[0.5px] flex-1 justify-start text-start line-clamp-1">
-					{#if edit}
-						<input
-							id="folder-{folderId}-input"
-							type="text"
-							bind:value={name}
-							on:blur={() => {
-								console.log('Blur');
-								updateHandler({ name });
-								edit = false;
-							}}
-							on:click={(e) => {
-								// Prevent accidental collapse toggling when clicking inside input
-								e.stopPropagation();
-							}}
-							on:mousedown={(e) => {
-								// Prevent accidental collapse toggling when clicking inside input
-								e.stopPropagation();
-							}}
-							on:keydown={(e) => {
-								if (e.key === 'Enter') {
+				{#if $isRTL}
+					<!-- RTL: Text first (visually on right), Chevron last (visually on left) -->
+					<div class="translate-y-[0.5px] flex-1 justify-start text-start line-clamp-1 pr-1">
+						{#if edit}
+							<input
+								id="folder-{folderId}-input"
+								type="text"
+								bind:value={name}
+								on:blur={() => {
+									console.log('Blur');
 									updateHandler({ name });
 									edit = false;
-								}
-							}}
-							class="w-full h-full bg-transparent outline-hidden"
-						/>
-					{:else}
-						{folders[folderId].name}
-					{/if}
-				</div>
+								}}
+								on:click={(e) => {
+									// Prevent accidental collapse toggling when clicking inside input
+									e.stopPropagation();
+								}}
+								on:mousedown={(e) => {
+									// Prevent accidental collapse toggling when clicking inside input
+									e.stopPropagation();
+								}}
+								on:keydown={(e) => {
+									if (e.key === 'Enter') {
+										updateHandler({ name });
+										edit = false;
+									}
+								}}
+								class="w-full h-full bg-transparent outline-hidden"
+							/>
+						{:else}
+							{folders[folderId].name}
+						{/if}
+					</div>
 
-				<button
-					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
-				>
-					<FolderMenu
-						onEdit={() => {
-							showFolderModal = true;
-						}}
-						onDelete={() => {
-							showDeleteConfirm = true;
-						}}
-						onExport={() => {
-							exportHandler();
+					<button
+						class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
+						on:click={(e) => {
+							e.stopPropagation();
+							e.stopImmediatePropagation();
+							open = !open;
+							isExpandedUpdateDebounceHandler();
 						}}
 					>
-						<div class="p-1 dark:hover:bg-gray-850 rounded-lg touch-auto">
-							<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
-						</div>
-					</FolderMenu>
-				</button>
+						{#if folders[folderId]?.meta?.icon}
+							<div class="flex group-hover:hidden transition-all">
+								<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
+							</div>
+
+							<div class="hidden group-hover:flex transition-all p-[1px]">
+								{#if open}
+									<ChevronDown className=" size-3" strokeWidth="2.5" />
+								{:else}
+									<ChevronLeft className=" size-3" strokeWidth="2.5" />
+								{/if}
+							</div>
+						{:else}
+							<div class="p-[1px]">
+								{#if open}
+									<ChevronDown className=" size-3" strokeWidth="2.5" />
+								{:else}
+									<ChevronLeft className=" size-3" strokeWidth="2.5" />
+								{/if}
+							</div>
+						{/if}
+					</button>
+
+					<button
+						class="absolute z-10 left-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
+					>
+						<FolderMenu
+							onEdit={() => {
+								showFolderModal = true;
+							}}
+							onDelete={() => {
+								showDeleteConfirm = true;
+							}}
+							onExport={() => {
+								exportHandler();
+							}}
+						>
+							<div class="p-1 dark:hover:bg-gray-850 rounded-lg touch-auto">
+								<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
+							</div>
+						</FolderMenu>
+					</button>
+				{:else}
+					<!-- LTR: Original layout -->
+					<button
+						class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
+						on:click={(e) => {
+							e.stopPropagation();
+							e.stopImmediatePropagation();
+							open = !open;
+							isExpandedUpdateDebounceHandler();
+						}}
+					>
+						{#if folders[folderId]?.meta?.icon}
+							<div class="flex group-hover:hidden transition-all">
+								<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
+							</div>
+
+							<div class="hidden group-hover:flex transition-all p-[1px]">
+								{#if open}
+									<ChevronDown className=" size-3" strokeWidth="2.5" />
+								{:else}
+									<ChevronRight className=" size-3" strokeWidth="2.5" />
+								{/if}
+							</div>
+						{:else}
+							<div class="p-[1px]">
+								{#if open}
+									<ChevronDown className=" size-3" strokeWidth="2.5" />
+								{:else}
+									<ChevronRight className=" size-3" strokeWidth="2.5" />
+								{/if}
+							</div>
+						{/if}
+					</button>
+
+					<div class="translate-y-[0.5px] flex-1 justify-start text-start line-clamp-1">
+						{#if edit}
+							<input
+								id="folder-{folderId}-input"
+								type="text"
+								bind:value={name}
+								on:blur={() => {
+									console.log('Blur');
+									updateHandler({ name });
+									edit = false;
+								}}
+								on:click={(e) => {
+									// Prevent accidental collapse toggling when clicking inside input
+									e.stopPropagation();
+								}}
+								on:mousedown={(e) => {
+									// Prevent accidental collapse toggling when clicking inside input
+									e.stopPropagation();
+								}}
+								on:keydown={(e) => {
+									if (e.key === 'Enter') {
+										updateHandler({ name });
+										edit = false;
+									}
+								}}
+								class="w-full h-full bg-transparent outline-hidden"
+							/>
+						{:else}
+							{folders[folderId].name}
+						{/if}
+					</div>
+
+					<button
+						class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
+					>
+						<FolderMenu
+							onEdit={() => {
+								showFolderModal = true;
+							}}
+							onDelete={() => {
+								showDeleteConfirm = true;
+							}}
+							onExport={() => {
+								exportHandler();
+							}}
+						>
+							<div class="p-1 dark:hover:bg-gray-850 rounded-lg touch-auto">
+								<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
+							</div>
+						</FolderMenu>
+					</button>
+				{/if}
 			</div>
 		</div>
 

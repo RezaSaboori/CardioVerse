@@ -6,9 +6,11 @@
 
 	import ChevronDown from '../icons/ChevronDown.svelte';
 	import ChevronRight from '../icons/ChevronRight.svelte';
+	import ChevronLeft from '../icons/ChevronLeft.svelte';
 	import Collapsible from './Collapsible.svelte';
 	import Tooltip from './Tooltip.svelte';
 	import Plus from '../icons/Plus.svelte';
+	import { isRTL } from '$lib/i18n';
 
 	export let open = true;
 
@@ -150,25 +152,61 @@
 				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<div
 					id="sidebar-folder-button"
-					class=" w-full group rounded-xl relative flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-900 transition {buttonClassName}"
+					class=" w-full group rounded-[99em] relative flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-900 transition {buttonClassName}"
 				>
-					<button class="w-full py-1.5 pl-2 flex items-center gap-1.5 text-xs font-medium">
+				<button class="w-full py-2 px-3 flex items-center gap-1 text-sm font-semibold rounded-[99em]">
+					{#if $isRTL}
+						<!-- RTL: Text + Plus (visually on right) -> Chevron (visually on left) -->
+						<!-- Name and + icon together -->
+						<div class="translate-y-[0.5px] flex items-center gap-2 text-right pr-2">
+							<span class="pr-1">{name}</span>
+							{#if onAdd}
+								<div class="invisible group-hover:visible">
+									<Tooltip content={onAddLabel}>
+										<button
+											class="p-0.5 dark:hover:bg-gray-850 rounded-lg touch-auto"
+											on:click={(e) => {
+												e.stopPropagation();
+												onAdd();
+											}}
+										>
+											<Plus className="size-3" strokeWidth="2.5" />
+										</button>
+									</Tooltip>
+								</div>
+							{/if}
+						</div>
+						
+						<!-- Flex spacer pushes chevron to the left -->
+						<div class="flex-1"></div>
+						
 						{#if chevron}
-							<div class=" p-[1px]">
+							<div class="flex items-center justify-center w-8 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors pl-1">
 								{#if open}
-									<ChevronDown className=" size-3" strokeWidth="2" />
+									<ChevronDown className="size-4" strokeWidth="2" />
 								{:else}
-									<ChevronRight className=" size-3" strokeWidth="2" />
+									<ChevronLeft className="size-4" strokeWidth="2" />
 								{/if}
 							</div>
 						{/if}
-
-						<div class="translate-y-[0.5px] {chevron ? '' : 'pl-0.5'}">
+					{:else}
+						<!-- LTR: Original layout -->
+						<div class="translate-y-[0.5px] flex-1 text-left">
 							{name}
 						</div>
-					</button>
+						{#if chevron}
+							<div class="flex items-center justify-center w-8 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
+								{#if open}
+									<ChevronDown className="size-4" strokeWidth="2" />
+								{:else}
+									<ChevronRight className="size-4" strokeWidth="2" />
+								{/if}
+							</div>
+						{/if}
+					{/if}
+				</button>
 
-					{#if onAdd}
+					{#if onAdd && !$isRTL}
 						<button
 							class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
 							on:pointerup={(e) => {
